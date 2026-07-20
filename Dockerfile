@@ -2,14 +2,19 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy all source files first
-COPY . .
-
-# Install root dependencies
+# Copy root package files and install server dependencies
+COPY package*.json ./
 RUN npm install --omit=dev
 
-# Install client dependencies and build the frontend
-RUN cd client && npm install && npm run build
+# Copy client package files and install client dependencies
+COPY client/package*.json ./client/
+RUN cd client && npm install
+
+# Copy all remaining source files
+COPY . .
+
+# Build the frontend
+RUN cd client && npm run build
 
 # Expose the port
 EXPOSE 3000

@@ -1,0 +1,12 @@
+# Exclude node_modules so Docker installs fresh Linux-compatible binaries
+node_modules
+client/node_modules
+
+# Exclude build output (will be rebuilt inside Docker)
+client/dist
+
+# Git & editor files
+.git
+.gitignore
+.github
+*.md
