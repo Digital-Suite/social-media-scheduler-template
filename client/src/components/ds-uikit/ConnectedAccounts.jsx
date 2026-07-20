@@ -108,6 +108,23 @@ export function ConnectedAccounts({ platforms }) {
     }
   };
 
+  const handleDisconnect = async (providerId) => {
+    if (!sessionToken || !apiBaseUrl) return;
+    
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/v1/accounts/disconnect/${providerId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${sessionToken}` }
+      });
+      if (res.ok) {
+        // Remove from local state
+        setConnectedAccounts(prev => prev.filter(a => a.provider.toLowerCase() !== providerId.toLowerCase()));
+      }
+    } catch (err) {
+      console.error('Failed to disconnect account', err);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center text-ds-textMuted">Initializing Digital Suite Connection Hub...</div>;
   }
@@ -153,14 +170,14 @@ export function ConnectedAccounts({ platforms }) {
               </div>
 
               <button
-                onClick={() => !isConnected ? handleConnect(platform.id) : null}
+                onClick={() => isConnected ? handleDisconnect(platform.id) : handleConnect(platform.id)}
                 className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   isConnected
-                    ? 'bg-ds-background border border-ds-border text-ds-textMuted opacity-50 cursor-not-allowed'
+                    ? 'bg-ds-surface border border-ds-border text-ds-textMuted hover:bg-ds-background hover:text-red-400 hover:border-red-500/30'
                     : 'bg-ds-primary hover:bg-ds-primaryHover text-ds-background shadow-sm shadow-ds-primary/20'
                 }`}
               >
-                {isConnected ? 'Connected' : '+ Connect'}
+                {isConnected ? 'Disconnect' : '+ Connect'}
               </button>
             </div>
           );
