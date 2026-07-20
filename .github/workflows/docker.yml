@@ -48,11 +48,19 @@ jobs:
       - name: Set lowercase repo name
         run: echo "REPO=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: Set Tag Name
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ env.REPO }}:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+            ghcr.io/${{ env.REPO }}:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.REPO }}:${{ env.VERSION }}-${{ github.ref_name }}
