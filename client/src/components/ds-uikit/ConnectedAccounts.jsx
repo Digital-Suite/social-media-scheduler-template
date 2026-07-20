@@ -90,12 +90,17 @@ export function ConnectedAccounts({ platforms }) {
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
-          // Open popup for OAuth flow
-          const width = 600;
-          const height = 700;
-          const left = (window.innerWidth - width) / 2;
-          const top = (window.innerHeight - height) / 2;
-          window.open(data.url, 'Connect', `width=${width},height=${height},top=${top},left=${left}`);
+          // Send message to host OS to open the external URL since we are in an iframe
+          if (window.parent !== window) {
+            window.parent.postMessage({ type: 'DIGITAL_SUITE_OPEN_URL', url: data.url }, '*');
+          } else {
+            // Fallback for standalone web mode
+            const width = 600;
+            const height = 700;
+            const left = (window.innerWidth - width) / 2;
+            const top = (window.innerHeight - height) / 2;
+            window.open(data.url, 'Connect', `width=${width},height=${height},top=${top},left=${left}`);
+          }
         }
       }
     } catch (err) {
