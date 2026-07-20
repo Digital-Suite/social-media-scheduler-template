@@ -2,7 +2,7 @@ name: Publish Docker image
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'develop']
 
 jobs:
   push_to_registry:
@@ -54,5 +54,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ env.REPO }}:latest
-            ghcr.io/${{ env.REPO }}:${{ env.VERSION }}
+            ghcr.io/${{ env.REPO }}:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+            ghcr.io/${{ env.REPO }}:${{ env.VERSION }}-${{ github.ref_name }}
