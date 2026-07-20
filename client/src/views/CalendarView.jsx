@@ -1,0 +1,470 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Trophy, 
+  Filter,
+  CheckCircle2,
+  Image as ImageIcon,
+  Video,
+  Type,
+  Plus,
+  MessageCircle,
+  Repeat2,
+  Heart,
+  Share,
+  Eye,
+  BadgeCheck,
+  Globe2,
+  Clock
+} from 'lucide-react';
+import { 
+  format, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval, 
+  isSameMonth,
+  isSameDay,
+  isToday,
+  addMonths,
+  subMonths,
+  addWeeks,
+  subWeeks,
+  isBefore,
+  startOfDay
+} from 'date-fns';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { PostDetailsModal } from '../components/PostDetailsModal';
+
+function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
+
+// Mock Data Generators
+const MOCK_PLATFORMS = ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube'];
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateMockPosts(dateStr) {
+  const count = getRandomInt(0, 4);
+  const posts = [];
+  const sampleContents = [
+    "Moved my hard paywall to the end of onboarding today.\n\nBefore, it was the first thing users saw.\n\nMy thinking: if people invest even a small amount of time before hitting the paywall, they'll be much more likely to start a trial 💰",
+    "Just launched our new feature! 🚀 Check it out in the dashboard.",
+    "Happy Friday everyone! What are you working on this weekend?",
+    "Here's a sneak peek at the new UI we're working on. Thoughts? 👀"
+  ];
+  for(let i=0; i<count; i++) {
+    const timeStr = `${String(getRandomInt(8, 23)).padStart(2, '0')}:${String(getRandomInt(0, 59)).padStart(2, '0')}`;
+    const postDate = new Date(`${dateStr}T${timeStr}:00`);
+    const isPublished = isBefore(postDate, new Date());
+    
+    posts.push({
+      id: `${dateStr}-${i}`,
+      platform: MOCK_PLATFORMS[getRandomInt(0, MOCK_PLATFORMS.length - 1)],
+      time: timeStr,
+      status: isPublished ? 'published' : 'scheduled',
+      authorName: 'Hasan Cagli',
+      authorHandle: '@HsanC_',
+      content: sampleContents[getRandomInt(0, sampleContents.length - 1)],
+      stats: {
+        comments: getRandomInt(10, 100),
+        retweets: getRandomInt(5, 50),
+        likes: `${getRandomInt(1, 9)}.${getRandomInt(1, 9)}K`,
+        views: `${getRandomInt(10, 200)}K`
+      }
+    });
+  }
+  return posts.sort((a,b) => a.time.localeCompare(b.time));
+}
+
+export function CalendarView() {
+  const navigate = useNavigate();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [hoveredPost, setHoveredPost] = useState(null);
+  const [selectedPosts, setSelectedPosts] = useState(null);
+  const [viewMode, setViewMode] = useState('monthly'); // 'monthly' | 'weekly'
+
+  // Date Ranges
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday start
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  // Memoize mock data to prevent regeneration on every hover/render
+  const mockPostsByDate = React.useMemo(() => {
+    const map = {};
+    const days = viewMode === 'monthly' ? daysInMonth : daysInWeek;
+    days.forEach(day => {
+      map[format(day, 'yyyy-MM-dd')] = generateMockPosts(format(day, 'yyyy-MM-dd'));
+    });
+    return map;
+  }, [currentDate, viewMode]);
+
+  const nextRange = () => {
+    if (viewMode === 'monthly') setCurrentDate(addMonths(currentDate, 1));
+    else setCurrentDate(addWeeks(currentDate, 1));
+  };
+
+  const prevRange = () => {
+    if (viewMode === 'monthly') setCurrentDate(subMonths(currentDate, 1));
+    else setCurrentDate(subWeeks(currentDate, 1));
+  };
+  
+  const goToToday = () => setCurrentDate(new Date());
+
+  const PlatformIcon = ({ platform }) => {
+    switch (platform) {
+      case 'facebook': return <div className="w-4 h-4 bg-blue-500 rounded-sm text-white flex items-center justify-center text-[10px] font-bold">f</div>;
+      case 'instagram': return <div className="w-4 h-4 bg-pink-500 rounded-sm text-white flex items-center justify-center text-[10px] font-bold">ig</div>;
+      case 'twitter': return <div className="w-4 h-4 bg-gray-300 rounded-sm text-black flex items-center justify-center text-[10px] font-bold">X</div>;
+      case 'linkedin': return <div className="w-4 h-4 bg-blue-600 rounded-sm text-white flex items-center justify-center text-[10px] font-bold">in</div>;
+      case 'youtube': return <div className="w-4 h-4 bg-red-500 rounded-sm text-white flex items-center justify-center text-[10px] font-bold">▶</div>;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      
+      {/* Top Toolbar */}
+      <div className="flex items-center justify-between p-4 border-b border-ds-border bg-ds-surface shrink-0">
+        <div className="flex items-center gap-2">
+
+          <select className="bg-ds-background border border-ds-border rounded px-3 py-1.5 text-sm text-ds-text">
+            <option>All Accounts</option>
+          </select>
+          <select className="bg-ds-background border border-ds-border rounded px-3 py-1.5 text-sm text-ds-text">
+            <option>All Status</option>
+          </select>
+          <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-ds-textMuted hover:text-ds-text">
+            <Filter className="w-4 h-4" /> Apply
+          </button>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-sm font-medium text-ds-textMuted">New York -05:00/-04:00</div>
+          <div className="flex items-center bg-ds-background rounded-lg border border-ds-border p-1">
+            <button 
+              onClick={() => setViewMode('weekly')}
+              className={cn("px-3 py-1 text-sm rounded", viewMode === 'weekly' ? "bg-ds-surface text-ds-text shadow" : "text-ds-textMuted hover:bg-ds-surface")}
+            >Weekly</button>
+            <button 
+              onClick={() => setViewMode('monthly')}
+              className={cn("px-3 py-1 text-sm rounded", viewMode === 'monthly' ? "bg-ds-surface text-ds-text shadow" : "text-ds-textMuted hover:bg-ds-surface")}
+            >Monthly</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Header */}
+      <div className="flex items-center justify-between px-6 py-4 shrink-0">
+        <h2 className="text-2xl font-bold text-ds-text">
+          {viewMode === 'monthly' 
+            ? format(currentDate, 'MMMM yyyy') 
+            : `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`}
+        </h2>
+        
+        <div className="flex items-center gap-3">
+          <button className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center border border-yellow-500/50">
+            <Trophy className="w-4 h-4" />
+          </button>
+          <button onClick={goToToday} className="px-4 py-1.5 border border-ds-border rounded-lg text-sm font-medium hover:bg-ds-surface">
+            Today
+          </button>
+          <div className="flex items-center border border-ds-border rounded-lg overflow-hidden">
+            <button onClick={prevRange} className="p-1.5 hover:bg-ds-surface border-r border-ds-border"><ChevronLeft className="w-5 h-5" /></button>
+            <button onClick={nextRange} className="p-1.5 hover:bg-ds-surface"><ChevronRight className="w-5 h-5" /></button>
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Grid Container */}
+      <div className="flex-1 overflow-auto bg-ds-background p-6 pt-0 relative">
+        <div className="min-w-[1000px] h-full flex flex-col">
+          
+          {viewMode === 'monthly' ? (
+            <>
+              {/* Days of Week Row (Monthly) */}
+              <div className="grid grid-cols-7 gap-4 mb-4 shrink-0">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                  <div key={day} className="text-center text-sm font-medium text-ds-textMuted uppercase">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Days Grid (Monthly) */}
+              <div className="grid grid-cols-7 auto-rows-[minmax(150px,auto)] gap-4 flex-1">
+                {daysInMonth.map((day, idx) => {
+                  const posts = mockPostsByDate[format(day, 'yyyy-MM-dd')] || [];
+                  const isCurrentMonth = isSameMonth(day, currentDate);
+                  
+                  return (
+                    <div 
+                      key={idx} 
+                      className={cn(
+                        "border rounded-xl p-2 flex flex-col gap-2 transition-colors cursor-pointer relative min-h-[150px] group pb-10",
+                        isToday(day) 
+                          ? "border-ds-primary/50 bg-ds-primary/5 hover:bg-ds-primary/10" 
+                          : "border-ds-border bg-ds-surface/50 hover:bg-ds-surface",
+                        !isCurrentMonth && "opacity-40"
+                      )}
+                    >
+                      <div className="flex items-center justify-between px-1">
+                        <div className={cn(
+                          "text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full", 
+                          isToday(day) ? "bg-ds-primary text-ds-background" : "text-ds-text"
+                        )}>
+                          {format(day, 'd')}
+                        </div>
+                        {posts.length > 0 && (
+                          <span className="text-[10px] font-bold text-ds-primary bg-ds-primary/10 px-1.5 rounded-full border border-ds-primary/20">
+                            {posts.length}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col gap-1.5 overflow-y-auto h-full">
+                        {Object.values(posts.reduce((acc, p) => {
+                          const key = `${p.platform}-${p.status}`;
+                          if (!acc[key]) acc[key] = { platform: p.platform, status: p.status, count: 0, posts: [] };
+                          acc[key].count += 1;
+                          acc[key].posts.push(p);
+                          return acc;
+                        }, {})).map(group => (
+                          <div 
+                            key={`${group.platform}-${group.status}`} 
+                            onMouseEnter={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setHoveredPost({ group, rect });
+                            }}
+                            onMouseLeave={() => setHoveredPost(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPosts(group.posts);
+                            }}
+                            className={cn(
+                              "border rounded p-1.5 flex items-center justify-between text-xs shadow-sm transition-colors shrink-0 cursor-pointer relative",
+                              group.status === 'published' 
+                                ? "bg-ds-primary/5 border-ds-primary/30 hover:bg-ds-primary/10" 
+                                : "bg-ds-surface/50 border-ds-border border-dashed hover:border-ds-primary/50 hover:bg-ds-surface"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <PlatformIcon platform={group.platform} />
+                              <span className={cn("font-semibold", group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
+                                {group.count} {group.status === 'published' ? 'Published' : 'Scheduled'}
+                              </span>
+                            </div>
+                            {group.status === 'published' ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-ds-primary" />
+                            ) : (
+                              <Clock className="w-3.5 h-3.5 text-ds-textMuted" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Create Post Buttons */}
+                      {!isBefore(day, startOfDay(new Date())) && (
+                        <div className="absolute bottom-2 right-2">
+                          {isToday(day) ? (
+                            <button onClick={() => navigate('/create')} className="flex items-center gap-1.5 px-3 py-1.5 bg-ds-primary hover:bg-ds-primaryHover text-ds-background rounded-full text-xs font-bold shadow-lg shadow-ds-primary/20 transition-all">
+                              <Plus className="w-3.5 h-3.5" /> Create Post
+                            </button>
+                          ) : (
+                            <button onClick={() => navigate('/create')} className="w-6 h-6 rounded-full bg-ds-primary hover:bg-ds-primaryHover text-ds-background flex items-center justify-center shadow-md shadow-ds-primary/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col min-h-0 bg-ds-surface/30 rounded-xl border border-ds-border overflow-hidden">
+              {/* Weekly Header Row */}
+              <div className="flex border-b border-ds-border bg-ds-surface/50">
+                <div className="w-20 shrink-0 border-r border-ds-border p-4 flex items-center justify-center">
+                  <span className="text-xs font-medium text-ds-textMuted uppercase">Time</span>
+                </div>
+                <div className="flex-1 grid grid-cols-7">
+                  {daysInWeek.map((day, idx) => (
+                    <div key={idx} className={cn("p-4 flex flex-col items-center justify-center gap-1 border-r border-ds-border last:border-r-0", isToday(day) && "bg-ds-primary/5")}>
+                      <span className={cn("text-xs font-bold uppercase", isToday(day) ? "text-ds-primary" : "text-ds-textMuted")}>
+                        {format(day, 'EEE')}
+                      </span>
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                        isToday(day) ? "bg-ds-primary text-ds-background" : "text-ds-text"
+                      )}>
+                        {format(day, 'd')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Weekly Time Grid */}
+              <div className="flex-1 overflow-y-auto relative">
+                
+                {/* Current Time Indicator (Mocked at 10:36 for testing like screenshot) */}
+                <div className="absolute left-20 right-0 z-10 pointer-events-none" style={{ top: `${(10.6 - 8) * 96}px` }}>
+                  <div className="h-px bg-blue-500 relative flex items-center">
+                    <div className="absolute right-0 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">10:36</div>
+                  </div>
+                </div>
+
+                <div className="flex">
+                  {/* Time Axis */}
+                  <div className="w-20 shrink-0 border-r border-ds-border bg-ds-surface/30">
+                    {Array.from({length: 16}, (_, i) => i + 8).map(hour => (
+                      <div key={hour} className="h-24 border-b border-ds-border/50 relative">
+                        <span className="absolute -top-2.5 left-0 w-full text-center text-xs font-medium text-ds-textMuted bg-ds-background px-1">
+                          {String(hour).padStart(2, '0')}:00
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Day Columns */}
+                  <div className="flex-1 grid grid-cols-7">
+                    {daysInWeek.map((day, idx) => {
+                      const posts = mockPostsByDate[format(day, 'yyyy-MM-dd')] || [];
+                      return (
+                        <div key={idx} className={cn("relative border-r border-ds-border last:border-r-0 border-b border-ds-border/50", isToday(day) && "bg-ds-primary/5")}>
+                          
+                          {/* Hour Grid Lines */}
+                          {Array.from({length: 16}, (_, i) => i + 8).map(hour => (
+                            <div key={hour} className="h-24 border-b border-ds-border/30 last:border-b-0 group cursor-pointer hover:bg-ds-surface/50 transition-colors" />
+                          ))}
+
+                          {/* Absolute Positioned Posts (Grouped) */}
+                          {Object.values(posts.reduce((acc, p) => {
+                            const key = `${p.platform}-${p.status}`;
+                            if (!acc[key]) acc[key] = { platform: p.platform, status: p.status, count: 0, posts: [] };
+                            acc[key].count += 1;
+                            acc[key].posts.push(p);
+                            return acc;
+                          }, {})).map(group => {
+                            const earliestPost = group.posts.reduce((earliest, p) => p.time < earliest.time ? p : earliest, group.posts[0]);
+                            const [h, m] = earliestPost.time.split(':').map(Number);
+                            const topPx = (h - 8 + (m / 60)) * 96;
+
+                            return (
+                              <div 
+                                key={`${group.platform}-${group.status}`}
+                                className={cn(
+                                  "absolute left-1 right-1 backdrop-blur-sm border rounded-md p-1.5 shadow-sm transition-all cursor-pointer z-20 flex items-center justify-between",
+                                  group.status === 'published'
+                                    ? "bg-ds-background/90 border-ds-primary/40 hover:border-ds-primary hover:bg-ds-surface"
+                                    : "bg-ds-surface/60 border-ds-border border-dashed hover:border-ds-primary/50 hover:bg-ds-surface/90"
+                                )}
+                                style={{ top: `${topPx}px` }}
+                                onMouseEnter={(e) => {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setHoveredPost({ group, rect });
+                                }}
+                                onMouseLeave={() => setHoveredPost(null)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPosts(group.posts);
+                                }}
+                              >
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                  <PlatformIcon platform={group.platform} />
+                                  <span className={cn("text-[10px] font-semibold truncate", group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
+                                    {group.count} {group.status === 'published' ? 'Published' : 'Scheduled'}
+                                  </span>
+                                </div>
+                                {group.status === 'published' ? (
+                                  <CheckCircle2 className="w-3 h-3 text-ds-primary shrink-0" />
+                                ) : (
+                                  <Clock className="w-3 h-3 text-ds-textMuted shrink-0" />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* Floating Popover Preview */}
+      {hoveredPost?.group && (
+        <div 
+          className="fixed z-50 pointer-events-none"
+          style={{
+            top: hoveredPost.rect.top - 20 + 'px',
+            left: hoveredPost.rect.right + 10 + 'px',
+          }}
+        >
+          <div className="w-72 bg-ds-background border border-ds-border shadow-2xl shadow-black/50 rounded-xl overflow-hidden flex flex-col max-h-[400px]">
+            {/* Popover Header */}
+            <div className="bg-ds-surface px-4 py-3 border-b border-ds-border flex items-center gap-2 shrink-0">
+              <PlatformIcon platform={hoveredPost.group.platform} />
+              <span className="text-sm font-bold text-ds-text capitalize">{hoveredPost.group.platform}</span>
+              <span className={cn("text-xs font-semibold ml-auto", hoveredPost.group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
+                {hoveredPost.group.count} {hoveredPost.group.status}
+              </span>
+            </div>
+
+            {/* Popover List */}
+            <div className="overflow-y-auto flex flex-col custom-scrollbar">
+              {hoveredPost.group.posts.map(post => (
+                <div key={post.id} className="border-b border-ds-border/50 last:border-b-0 hover:bg-ds-surface/30 transition-colors">
+                  <div className="px-4 pt-3 flex flex-col">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-ds-surface border border-ds-border overflow-hidden">
+                          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.authorName}`} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-xs font-bold text-ds-text">{post.authorName}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-ds-textMuted text-[10px] font-mono">{post.time}</span>
+                        {post.status === 'published' ? <CheckCircle2 className="w-3 h-3 text-ds-primary" /> : <Clock className="w-3 h-3 text-ds-textMuted" />}
+                      </div>
+                    </div>
+                    <div className="text-xs text-ds-text/90 line-clamp-2 leading-relaxed mb-3">
+                      {post.content}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Post Details Modal */}
+      <PostDetailsModal 
+        isOpen={!!selectedPosts} 
+        posts={selectedPosts} 
+        onClose={() => setSelectedPosts(null)} 
+      />
+
+    </div>
+  );
+}
