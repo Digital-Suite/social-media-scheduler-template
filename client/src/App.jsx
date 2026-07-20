@@ -4,19 +4,24 @@ import { AppShell } from './components/layout/AppShell';
 import { CalendarView } from './views/CalendarView';
 import { AccountsView } from './views/AccountsView';
 import { CreatePostView } from './views/CreatePostView';
+import { SettingsView } from './views/SettingsView';
+import { SettingsProvider } from './context/SettingsContext';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<AppShell />}>
-          <Route path="/" element={<CalendarView />} />
-          <Route path="/accounts" element={<AccountsView />} />
-          <Route path="/create" element={<CreatePostView />} />
-          <Route path="*" element={<div className="p-8 text-ds-textMuted">Coming Soon</div>} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <SettingsProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route path="/" element={<CalendarView />} />
+            <Route path="/accounts" element={<AccountsView />} />
+            <Route path="/create" element={<CreatePostView />} />
+            <Route path="/settings" element={<SettingsView />} />
+            <Route path="*" element={<div className="p-8 text-ds-textMuted">Coming Soon</div>} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </SettingsProvider>
   );
 }
 

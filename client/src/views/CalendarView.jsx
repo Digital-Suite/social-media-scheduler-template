@@ -37,15 +37,18 @@ import {
   startOfDay
 } from 'date-fns';
 import { clsx } from 'clsx';
+import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
+import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
 import { PostDetailsModal } from '../components/PostDetailsModal';
+import { useSettings } from '../context/SettingsContext';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
 // Mock Data Generators
-const MOCK_PLATFORMS = ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube'];
+const MOCK_PLATFORMS = ['facebook', 'instagram', 'x', 'linkedin', 'youtube', 'tiktok'];
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -86,6 +89,7 @@ function generateMockPosts(dateStr) {
 
 export function CalendarView() {
   const navigate = useNavigate();
+  const { timezone } = useSettings();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hoveredPost, setHoveredPost] = useState(null);
   const [selectedPosts, setSelectedPosts] = useState(null);
@@ -125,11 +129,13 @@ export function CalendarView() {
 
   const PlatformIcon = ({ platform }) => {
     switch (platform) {
-      case 'facebook': return <div className="w-4 h-4 bg-blue-500 rounded-sm text-white flex items-center justify-center text-[10px] font-bold">f</div>;
-      case 'instagram': return <div className="w-4 h-4 bg-pink-500 rounded-sm text-white flex items-center justify-center text-[10px] font-bold">ig</div>;
-      case 'twitter': return <div className="w-4 h-4 bg-gray-300 rounded-sm text-black flex items-center justify-center text-[10px] font-bold">X</div>;
-      case 'linkedin': return <div className="w-4 h-4 bg-blue-600 rounded-sm text-white flex items-center justify-center text-[10px] font-bold">in</div>;
-      case 'youtube': return <div className="w-4 h-4 bg-red-500 rounded-sm text-white flex items-center justify-center text-[10px] font-bold">▶</div>;
+      case 'facebook': return <div className="w-4 h-4 bg-blue-600 rounded-sm text-white flex items-center justify-center"><FaFacebook className="w-2.5 h-2.5" /></div>;
+      case 'instagram': return <div className="w-4 h-4 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 rounded-sm text-white flex items-center justify-center"><FaInstagram className="w-2.5 h-2.5" /></div>;
+      case 'x': return <div className="w-4 h-4 bg-black rounded-sm text-white flex items-center justify-center"><FaXTwitter className="w-2.5 h-2.5" /></div>;
+      case 'twitter': return <div className="w-4 h-4 bg-black rounded-sm text-white flex items-center justify-center"><FaXTwitter className="w-2.5 h-2.5" /></div>;
+      case 'linkedin': return <div className="w-4 h-4 bg-blue-700 rounded-sm text-white flex items-center justify-center"><FaLinkedin className="w-2.5 h-2.5" /></div>;
+      case 'youtube': return <div className="w-4 h-4 bg-red-600 rounded-sm text-white flex items-center justify-center"><FaYoutube className="w-2.5 h-2.5" /></div>;
+      case 'tiktok': return <div className="w-4 h-4 bg-black rounded-sm text-white flex items-center justify-center"><FaTiktok className="w-2.5 h-2.5" /></div>;
       default: return null;
     }
   };
@@ -153,7 +159,7 @@ export function CalendarView() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="text-sm font-medium text-ds-textMuted">New York -05:00/-04:00</div>
+          <div className="text-sm font-medium text-ds-textMuted">{timezone.label} · {timezone.offset}</div>
           <div className="flex items-center bg-ds-background rounded-lg border border-ds-border p-1">
             <button 
               onClick={() => setViewMode('weekly')}
@@ -412,12 +418,18 @@ export function CalendarView() {
       </div>
 
       {/* Floating Popover Preview */}
-      {hoveredPost?.group && (
+      {hoveredPost?.group && (() => {
+        const POPUP_WIDTH = 288; // w-72
+        const spaceOnRight = window.innerWidth - hoveredPost.rect.right - 10;
+        const showOnLeft = spaceOnRight < POPUP_WIDTH;
+        return (
         <div 
           className="fixed z-50 pointer-events-none"
           style={{
             top: hoveredPost.rect.top - 20 + 'px',
-            left: hoveredPost.rect.right + 10 + 'px',
+            ...(showOnLeft
+              ? { left: hoveredPost.rect.left - POPUP_WIDTH - 10 + 'px' }
+              : { left: hoveredPost.rect.right + 10 + 'px' }),
           }}
         >
           <div className="w-72 bg-ds-background border border-ds-border shadow-2xl shadow-black/50 rounded-xl overflow-hidden flex flex-col max-h-[400px]">
@@ -456,7 +468,8 @@ export function CalendarView() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Post Details Modal */}
       <PostDetailsModal 

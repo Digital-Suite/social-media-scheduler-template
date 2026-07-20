@@ -10,7 +10,8 @@ import {
   ExternalLink,
   Clock
 } from 'lucide-react';
-import { FaFacebook, FaInstagram, FaTwitter, FaYoutube, FaLinkedin } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
+import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function PostDetailsModal({ isOpen, posts, onClose }) {
@@ -29,10 +30,11 @@ export function PostDetailsModal({ isOpen, posts, onClose }) {
     switch (platform) {
       case 'facebook': return <FaFacebook className="w-5 h-5 text-blue-500" />;
       case 'instagram': return <FaInstagram className="w-5 h-5 text-pink-500" />;
-      case 'twitter': return <FaTwitter className="w-5 h-5 text-ds-text" />;
+      case 'x': return <FaXTwitter className="w-5 h-5 text-ds-text" />;
+      case 'twitter': return <FaXTwitter className="w-5 h-5 text-ds-text" />;
       case 'linkedin': return <FaLinkedin className="w-5 h-5 text-blue-600" />;
       case 'youtube': return <FaYoutube className="w-5 h-5 text-red-500" />;
-      case 'tiktok': return <div className="w-5 h-5 bg-white rounded-full text-black flex items-center justify-center p-1 font-bold text-[8px]">tik</div>;
+      case 'tiktok': return <FaTiktok className="w-5 h-5 text-ds-text" />;
       default: return null;
     }
   };

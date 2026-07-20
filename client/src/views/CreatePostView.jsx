@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   CalendarClock
 } from 'lucide-react';
-import { FaFacebook, FaInstagram, FaTwitter, FaYoutube, FaLinkedin } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
+import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MOCK_ACCOUNTS = [
@@ -21,7 +22,7 @@ const MOCK_ACCOUNTS = [
   { id: 3, name: 'Hasan Cagli', handle: '@hasancagli', platform: 'linkedin', connected: true },
   { id: 4, name: 'Hasan Cagli', handle: '@hasancagli', platform: 'youtube', connected: true },
   { id: 5, name: 'hasancaglix', handle: '@hasancaglix', platform: 'instagram', connected: true },
-  { id: 6, name: 'HsanC_', handle: '@hsanc_', platform: 'twitter', connected: true },
+  { id: 6, name: 'HsanC_', handle: '@hsanc_', platform: 'x', connected: true },
 ];
 
 export function CreatePostView() {
@@ -39,12 +40,13 @@ export function CreatePostView() {
 
   const PlatformIcon = ({ platform }) => {
     switch (platform) {
-      case 'facebook': return <div className="w-5 h-5 bg-blue-500 rounded-full text-white flex items-center justify-center p-1"><FaFacebook className="w-3 h-3" /></div>;
-      case 'instagram': return <div className="w-5 h-5 bg-pink-500 rounded-full text-white flex items-center justify-center p-1"><FaInstagram className="w-3 h-3" /></div>;
-      case 'twitter': return <div className="w-5 h-5 bg-gray-300 rounded-full text-black flex items-center justify-center p-1"><FaTwitter className="w-3 h-3" /></div>;
-      case 'linkedin': return <div className="w-5 h-5 bg-blue-600 rounded-full text-white flex items-center justify-center p-1"><FaLinkedin className="w-3 h-3" /></div>;
-      case 'youtube': return <div className="w-5 h-5 bg-red-500 rounded-full text-white flex items-center justify-center p-1"><FaYoutube className="w-3 h-3" /></div>;
-      case 'tiktok': return <div className="w-5 h-5 bg-white rounded-full text-black flex items-center justify-center p-1 font-bold text-[8px]">tik</div>;
+      case 'facebook': return <div className="w-5 h-5 bg-blue-600 rounded-full text-white flex items-center justify-center p-1"><FaFacebook className="w-3 h-3" /></div>;
+      case 'instagram': return <div className="w-5 h-5 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 rounded-full text-white flex items-center justify-center p-1"><FaInstagram className="w-3 h-3" /></div>;
+      case 'x': return <div className="w-5 h-5 bg-black rounded-full text-white flex items-center justify-center p-1"><FaXTwitter className="w-3 h-3" /></div>;
+      case 'twitter': return <div className="w-5 h-5 bg-black rounded-full text-white flex items-center justify-center p-1"><FaXTwitter className="w-3 h-3" /></div>;
+      case 'linkedin': return <div className="w-5 h-5 bg-blue-700 rounded-full text-white flex items-center justify-center p-1"><FaLinkedin className="w-3 h-3" /></div>;
+      case 'youtube': return <div className="w-5 h-5 bg-red-600 rounded-full text-white flex items-center justify-center p-1"><FaYoutube className="w-3 h-3" /></div>;
+      case 'tiktok': return <div className="w-5 h-5 bg-black rounded-full text-white flex items-center justify-center p-1"><FaTiktok className="w-3 h-3" /></div>;
       default: return null;
     }
   };
@@ -56,9 +58,6 @@ export function CreatePostView() {
         <div>
           <h1 className="text-2xl font-bold text-ds-text flex items-center gap-3">
             Create New Post
-            <button className="flex items-center gap-1 text-xs font-medium bg-ds-surface border border-ds-border px-2 py-1 rounded-md text-ds-textMuted hover:text-ds-text">
-              <FileText className="w-3 h-3" /> Guide
-            </button>
           </h1>
           <p className="text-ds-textMuted text-sm mt-1">Design, caption, and schedule your content across platforms.</p>
         </div>
@@ -94,18 +93,7 @@ export function CreatePostView() {
                 <p className="text-ds-textMuted text-sm">or click to browse</p>
               </div>
 
-              <div className="flex flex-col items-center gap-3 mt-4 w-full">
-                <div className="flex items-center gap-4 w-full">
-                  <div className="h-px bg-ds-border flex-1"></div>
-                  <span className="text-xs text-ds-textMuted uppercase font-bold">Import</span>
-                  <div className="h-px bg-ds-border flex-1"></div>
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <button className="flex items-center gap-2 bg-gradient-to-r from-green-500/10 to-teal-500/10 border border-green-500/20 hover:border-green-500/40 px-4 py-2 rounded-lg text-sm font-medium text-green-400 transition-colors">
-                    <Sparkles className="w-4 h-4" /> AI Generate
-                  </button>
-                </div>
-              </div>
+
             </div>
           </div>
 
