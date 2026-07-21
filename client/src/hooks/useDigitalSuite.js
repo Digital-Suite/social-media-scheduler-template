@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export function useDigitalSuite(navConfig) {
   const [isEmbedded, setIsEmbedded] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const inIframe = window !== window.parent;
@@ -17,7 +18,6 @@ export function useDigitalSuite(navConfig) {
     }
 
     const handleMessage = (event) => {
-      // Allow messages from any origin in development, but you might want to restrict this in production
       if (event.data?.type === 'DIGITAL_SUITE_NAVIGATE') {
         const { path } = event.data;
         if (typeof path === 'string') {
@@ -29,6 +29,15 @@ export function useDigitalSuite(navConfig) {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [navConfig, navigate]);
+
+  useEffect(() => {
+    if (isEmbedded) {
+      window.parent.postMessage({
+        type: 'ROUTE_CHANGE',
+        path: location.pathname
+      }, '*');
+    }
+  }, [location.pathname, isEmbedded]);
 
   return { isEmbedded };
 }

@@ -323,11 +323,11 @@ export function CalendarView() {
                       {!isBefore(day, startOfDay(new Date())) && (
                         <div className="absolute bottom-2 right-2">
                           {isToday(day) ? (
-                            <button onClick={() => navigate('/create')} className="flex items-center gap-1.5 px-3 py-1.5 bg-ds-primary hover:bg-ds-primaryHover text-ds-background rounded-full text-xs font-bold shadow-lg shadow-ds-primary/20 transition-all">
+                            <button onClick={() => navigate('/create', { state: { date: format(day, 'yyyy-MM-dd') } })} className="flex items-center gap-1.5 px-3 py-1.5 bg-ds-primary hover:bg-ds-primaryHover text-ds-background rounded-full text-xs font-bold shadow-lg shadow-ds-primary/20 transition-all">
                               <Plus className="w-3.5 h-3.5" /> Create Post
                             </button>
                           ) : (
-                            <button onClick={() => navigate('/create')} className="w-6 h-6 rounded-full bg-ds-primary hover:bg-ds-primaryHover text-ds-background flex items-center justify-center shadow-md shadow-ds-primary/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => navigate('/create', { state: { date: format(day, 'yyyy-MM-dd') } })} className="w-6 h-6 rounded-full bg-ds-primary hover:bg-ds-primaryHover text-ds-background flex items-center justify-center shadow-md shadow-ds-primary/20 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Plus className="w-4 h-4" />
                             </button>
                           )}

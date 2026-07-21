@@ -18,16 +18,35 @@ import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { format, addMinutes } from 'date-fns';
 
 export function CreatePostView() {
   const { sessionToken, connectedAccounts, apiBaseUrl } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const getInitialTime = () => {
+    // Current time + 30 minutes
+    const date = addMinutes(new Date(), 30);
+    
+    // If a specific date was selected from the calendar
+    if (location.state?.date) {
+      const parts = location.state.date.split('-'); // yyyy-MM-dd
+      date.setFullYear(parseInt(parts[0], 10));
+      date.setMonth(parseInt(parts[1], 10) - 1);
+      date.setDate(parseInt(parts[2], 10));
+    }
+    
+    // Format for datetime-local input (yyyy-MM-ddThh:mm)
+    return format(date, "yyyy-MM-dd'T'HH:mm");
+  };
+
   const [selectedAccounts, setSelectedAccounts] = useState([]);
   const [caption, setCaption] = useState("Excited to announce our new feature! 🚀\n\n#SaaS");
   const [useSameCaption, setUseSameCaption] = useState(true);
   const [platformCaptions, setPlatformCaptions] = useState({});
-  const [postTime, setPostTime] = useState('');
+  const [postTime, setPostTime] = useState(getInitialTime());
   const [mediaUrl, setMediaUrl] = useState('https://www.w3schools.com/html/mov_bbb.mp4'); // Dummy video
   const [isScheduling, setIsScheduling] = useState(false);
 
