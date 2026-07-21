@@ -10,7 +10,8 @@ import {
   Wand2,
   Hash,
   CheckCircle2,
-  CalendarClock
+  CalendarClock,
+  ArrowLeft
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
@@ -93,11 +94,19 @@ export function CreatePostView() {
     <div className="p-8 max-w-3xl mx-auto h-full flex flex-col w-full overflow-y-auto custom-scrollbar">
       {/* Header */}
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-ds-text flex items-center gap-3">
-            Create New Post
-          </h1>
-          <p className="text-ds-textMuted text-sm mt-1">Design, caption, and schedule your content across platforms.</p>
+        <div className="flex flex-col gap-2">
+          <button 
+            onClick={() => navigate('/')} 
+            className="flex items-center gap-2 text-sm font-medium text-ds-textMuted hover:text-ds-text self-start transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Calendar
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-ds-text flex items-center gap-3">
+              Create New Post
+            </h1>
+            <p className="text-ds-textMuted text-sm mt-1">Design, caption, and schedule your content across platforms.</p>
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
@@ -162,7 +171,14 @@ export function CreatePostView() {
             <div className="bg-ds-background border border-ds-border rounded-xl p-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {connectedAccounts.map(acc => (
-                  <label key={acc.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-ds-surface cursor-pointer group">
+                  <label 
+                    key={acc.id} 
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-ds-surface cursor-pointer group"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleAccount(acc.id);
+                    }}
+                  >
                     <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedAccounts.includes(acc.id) ? 'bg-ds-primary border-ds-primary' : 'border-ds-border bg-transparent group-hover:border-gray-500'}`}>
                       {selectedAccounts.includes(acc.id) && <CheckCircle2 className="w-3 h-3 text-ds-background" />}
                     </div>

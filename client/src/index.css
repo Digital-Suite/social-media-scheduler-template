@@ -17,9 +17,14 @@
 }
 
 /* Custom scrollbar for a sleek look */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ds-border) transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -27,9 +32,11 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-ds-border rounded-full;
+  background-color: var(--color-ds-border);
+  border-radius: 9999px;
+  border: 2px solid var(--color-ds-background);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  background-color: var(--color-ds-textMuted);
 }
