@@ -85,8 +85,9 @@ const platforms = [
     icon: FaBluesky,
     iconColor: 'text-white',
     bgColor: 'bg-blue-500',
-    description: 'Decentralized social network',
+    description: 'Temporarily unavailable',
     followers: null,
+    disabled: true,
   },
   {
     id: 'google',
@@ -94,8 +95,9 @@ const platforms = [
     icon: SiGoogle,
     iconColor: 'text-white',
     bgColor: 'bg-gradient-to-br from-blue-500 via-red-500 to-yellow-400',
-    description: 'Business profile & reviews',
+    description: 'Temporarily unavailable',
     followers: null,
+    disabled: true,
   },
 ];
 
