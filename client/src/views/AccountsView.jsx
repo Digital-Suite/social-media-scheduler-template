@@ -20,8 +20,9 @@ const platforms = [
     icon: FaXTwitter,
     iconColor: 'text-white',
     bgColor: 'bg-black',
-    description: 'Tweets, threads & spaces',
+    description: 'Temporarily unavailable',
     followers: null,
+    disabled: true,
   },
   {
     id: 'instagram',
