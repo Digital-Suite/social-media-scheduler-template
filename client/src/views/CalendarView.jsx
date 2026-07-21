@@ -105,15 +105,52 @@ export function CalendarView() {
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  // Memoize mock data to prevent regeneration on every hover/render
-  const mockPostsByDate = React.useMemo(() => {
+  const [realPosts, setRealPosts] = useState([]);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await fetch('/api/posts');
+        if (res.ok) {
+          const data = await res.json();
+          // Normalize post keys to match the frontend expectations
+          const formattedPosts = data.map(p => ({
+            id: p.id,
+            platform: p.platform,
+            time: format(new Date(p.post_time), 'HH:mm'),
+            date: format(new Date(p.post_time), 'yyyy-MM-dd'),
+            fullDate: new Date(p.post_time),
+            status: p.status,
+            authorName: 'DigitalSuite User',
+            authorHandle: '@user',
+            content: p.content,
+            stats: { comments: 0, retweets: 0, likes: '0', views: '0' }
+          }));
+          setRealPosts(formattedPosts);
+        }
+      } catch (err) {
+        console.error('Failed to fetch posts', err);
+      }
+    };
+    fetchPosts();
+  }, [currentDate]); // Re-fetch occasionally
+
+  // Memoize data to group by date
+  const postsByDate = React.useMemo(() => {
     const map = {};
     const days = viewMode === 'monthly' ? daysInMonth : daysInWeek;
     days.forEach(day => {
-      map[format(day, 'yyyy-MM-dd')] = generateMockPosts(format(day, 'yyyy-MM-dd'));
+      map[format(day, 'yyyy-MM-dd')] = [];
     });
+    
+    realPosts.forEach(post => {
+      if (map[post.date]) {
+        map[post.date].push(post);
+      }
+    });
+
     return map;
-  }, [currentDate, viewMode]);
+  }, [realPosts, currentDate, viewMode]);
 
   const nextRange = () => {
     if (viewMode === 'monthly') setCurrentDate(addMonths(currentDate, 1));
@@ -213,7 +250,7 @@ export function CalendarView() {
               {/* Days Grid (Monthly) */}
               <div className="grid grid-cols-7 auto-rows-[minmax(150px,auto)] gap-4 flex-1">
                 {daysInMonth.map((day, idx) => {
-                  const posts = mockPostsByDate[format(day, 'yyyy-MM-dd')] || [];
+                  const posts = postsByDate[format(day, 'yyyy-MM-dd')] || [];
                   const isCurrentMonth = isSameMonth(day, currentDate);
                   
                   return (
@@ -350,7 +387,7 @@ export function CalendarView() {
                   {/* Day Columns */}
                   <div className="flex-1 grid grid-cols-7">
                     {daysInWeek.map((day, idx) => {
-                      const posts = mockPostsByDate[format(day, 'yyyy-MM-dd')] || [];
+                      const posts = postsByDate[format(day, 'yyyy-MM-dd')] || [];
                       return (
                         <div key={idx} className={cn("relative border-r border-ds-border last:border-r-0 border-b border-ds-border/50", isToday(day) && "bg-ds-primary/5")}>
                           

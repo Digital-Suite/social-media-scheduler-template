@@ -16,26 +16,64 @@ import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const MOCK_ACCOUNTS = [
-  { id: 1, name: 'Hasan Cagli', handle: '@hasancaglibusiness', platform: 'facebook', connected: true },
-  { id: 2, name: 'Hasan Cagli', handle: '@hasanccagli', platform: 'tiktok', connected: true },
-  { id: 3, name: 'Hasan Cagli', handle: '@hasancagli', platform: 'linkedin', connected: true },
-  { id: 4, name: 'Hasan Cagli', handle: '@hasancagli', platform: 'youtube', connected: true },
-  { id: 5, name: 'hasancaglix', handle: '@hasancaglix', platform: 'instagram', connected: true },
-  { id: 6, name: 'HsanC_', handle: '@hsanc_', platform: 'x', connected: true },
-];
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export function CreatePostView() {
-  const [selectedAccounts, setSelectedAccounts] = useState([1, 2]);
-  const [caption, setCaption] = useState("Excited to announce our new Social Media Scheduler feature in the Digital Suite OS! 🚀\n\n#DigitalSuite #SaaS #Productivity");
+  const { sessionToken, connectedAccounts, apiBaseUrl } = useAuth();
+  const navigate = useNavigate();
+  const [selectedAccounts, setSelectedAccounts] = useState([]);
+  const [caption, setCaption] = useState("Excited to announce our new feature! 🚀\n\n#SaaS");
   const [useSameCaption, setUseSameCaption] = useState(true);
   const [platformCaptions, setPlatformCaptions] = useState({});
-  const [showAiMenu, setShowAiMenu] = useState(false);
+  const [postTime, setPostTime] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('https://www.w3schools.com/html/mov_bbb.mp4'); // Dummy video
+  const [isScheduling, setIsScheduling] = useState(false);
 
   const toggleAccount = (id) => {
     setSelectedAccounts(prev => 
       prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
     );
+  };
+
+  const handleSchedule = async () => {
+    if (!postTime) {
+      alert("Please select a date and time to schedule the post.");
+      return;
+    }
+    if (selectedAccounts.length === 0) {
+      alert("Please select at least one account.");
+      return;
+    }
+
+    setIsScheduling(true);
+    try {
+      for (const accountId of selectedAccounts) {
+        const account = connectedAccounts.find(a => a.id === accountId);
+        if (!account) continue;
+
+        const postCaption = useSameCaption ? caption : (platformCaptions[accountId] || caption);
+        
+        await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform: account.provider,
+            content: postCaption,
+            mediaUrl: mediaUrl,
+            postTime: postTime,
+            sessionToken: sessionToken,
+            apiBaseUrl: apiBaseUrl
+          })
+        });
+      }
+      alert("Posts scheduled successfully!");
+      navigate('/');
+    } catch (err) {
+      alert("Failed to schedule posts: " + err.message);
+    } finally {
+      setIsScheduling(false);
+    }
   };
 
   const PlatformIcon = ({ platform }) => {
@@ -52,9 +90,9 @@ export function CreatePostView() {
   };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto h-full flex flex-col w-full">
+    <div className="p-8 max-w-3xl mx-auto h-full flex flex-col w-full overflow-y-auto custom-scrollbar">
       {/* Header */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-ds-text flex items-center gap-3">
             Create New Post
@@ -62,14 +100,26 @@ export function CreatePostView() {
           <p className="text-ds-textMuted text-sm mt-1">Design, caption, and schedule your content across platforms.</p>
         </div>
         
-        <button className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-ds-primary hover:bg-ds-primaryHover text-ds-background font-bold transition-colors shadow-lg shadow-ds-primary/20 shrink-0">
-          <CalendarClock className="w-5 h-5" />
-          Schedule Post
-        </button>
+        <div className="flex items-center gap-3">
+          <input 
+            type="datetime-local" 
+            value={postTime}
+            onChange={(e) => setPostTime(e.target.value)}
+            className="bg-ds-surface border border-ds-border text-ds-text rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-ds-primary"
+          />
+          <button 
+            onClick={handleSchedule}
+            disabled={isScheduling}
+            className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-ds-primary hover:bg-ds-primaryHover disabled:opacity-50 text-ds-background font-bold transition-colors shadow-lg shadow-ds-primary/20 shrink-0"
+          >
+            <CalendarClock className="w-5 h-5" />
+            {isScheduling ? 'Scheduling...' : 'Schedule Post'}
+          </button>
+        </div>
       </div>
 
       {/* Main Content Vertical Stack */}
-      <div className="flex flex-col gap-6 flex-1 pb-10 w-full">
+      <div className="flex flex-col gap-6 flex-1 w-full">
         
           {/* Step 1: Media */}
           <div className="space-y-3 bg-ds-surface p-6 rounded-2xl border border-ds-border">
@@ -111,22 +161,22 @@ export function CreatePostView() {
             
             <div className="bg-ds-background border border-ds-border rounded-xl p-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {MOCK_ACCOUNTS.map(acc => (
+                {connectedAccounts.map(acc => (
                   <label key={acc.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-ds-surface cursor-pointer group">
                     <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedAccounts.includes(acc.id) ? 'bg-ds-primary border-ds-primary' : 'border-ds-border bg-transparent group-hover:border-gray-500'}`}>
                       {selectedAccounts.includes(acc.id) && <CheckCircle2 className="w-3 h-3 text-ds-background" />}
                     </div>
                     <div className="relative">
                       <div className="w-8 h-8 rounded-full bg-ds-surface border border-ds-border flex items-center justify-center overflow-hidden">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${acc.name}`} alt="" className="w-full h-full object-cover" />
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${acc.metadata?.username || acc.provider}`} alt="" className="w-full h-full object-cover" />
                       </div>
                       <div className="absolute -bottom-1 -right-1 ring-2 ring-ds-background rounded-full">
-                        <PlatformIcon platform={acc.platform} />
+                        <PlatformIcon platform={acc.provider} />
                       </div>
                     </div>
                     <div className="flex flex-col truncate">
-                      <span className="text-sm font-medium text-ds-text leading-tight truncate">{acc.name}</span>
-                      <span className="text-xs text-ds-textMuted leading-tight truncate">{acc.handle}</span>
+                      <span className="text-sm font-medium text-ds-text leading-tight truncate">{acc.metadata?.username || 'User'}</span>
+                      <span className="text-xs text-ds-textMuted leading-tight truncate">@{acc.provider}</span>
                     </div>
                   </label>
                 ))}
@@ -172,10 +222,10 @@ export function CreatePostView() {
 
               {selectedAccounts.length > 0 && (
                 <div className="p-3 border-t border-ds-border bg-ds-surface/30 rounded-b-xl flex gap-2 overflow-x-auto custom-scrollbar">
-                  {MOCK_ACCOUNTS.filter(a => selectedAccounts.includes(a.id)).map(acc => (
+                  {connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(acc => (
                     <div key={acc.id} className="flex items-center gap-1.5 px-2 py-1 bg-ds-background border border-ds-border rounded-md shrink-0">
-                      <PlatformIcon platform={acc.platform} />
-                      <span className="text-xs font-medium text-ds-text">{acc.name}</span>
+                      <PlatformIcon platform={acc.provider} />
+                      <span className="text-xs font-medium text-ds-text">{acc.metadata?.username || 'User'}</span>
                     </div>
                   ))}
                 </div>
@@ -183,12 +233,12 @@ export function CreatePostView() {
             </div>
           ) : (
             <div className="flex flex-col gap-4 flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-[300px]">
-              {MOCK_ACCOUNTS.filter(a => selectedAccounts.includes(a.id)).map(acc => (
+              {connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(acc => (
                 <div key={acc.id} className="bg-ds-background border border-ds-border rounded-xl flex flex-col relative min-h-[200px] shrink-0">
                   <div className="flex items-center justify-between p-3 border-b border-ds-border bg-ds-surface/50 rounded-t-xl">
                     <div className="flex items-center gap-2">
-                      <PlatformIcon platform={acc.platform} />
-                      <span className="text-sm font-medium text-ds-text">{acc.name}</span>
+                      <PlatformIcon platform={acc.provider} />
+                      <span className="text-sm font-medium text-ds-text">{acc.metadata?.username || 'User'}</span>
                     </div>
                     <span className="text-xs font-mono text-ds-textMuted">{(platformCaptions[acc.id] || '').length}/3000</span>
                   </div>
@@ -197,7 +247,7 @@ export function CreatePostView() {
                       value={platformCaptions[acc.id] || ''}
                       onChange={(e) => setPlatformCaptions({...platformCaptions, [acc.id]: e.target.value})}
                       className="w-full flex-1 bg-transparent text-ds-text placeholder-ds-textMuted resize-none outline-none focus:ring-0 text-sm leading-relaxed custom-scrollbar"
-                      placeholder={`Write your caption for ${acc.platform.charAt(0).toUpperCase() + acc.platform.slice(1)}...`}
+                      placeholder={`Write your caption for ${acc.provider.charAt(0).toUpperCase() + acc.provider.slice(1)}...`}
                     />
                   </div>
                 </div>

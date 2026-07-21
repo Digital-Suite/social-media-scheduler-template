@@ -1,56 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
+import { useAuth } from '../../context/AuthContext';
 
 export function ConnectedAccounts({ platforms }) {
-  const [sessionToken, setSessionToken] = useState(null);
-  const [apiBaseUrl, setApiBaseUrl] = useState(null);
-  const [connectedAccounts, setConnectedAccounts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { sessionToken, apiBaseUrl, connectedAccounts, setConnectedAccounts } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [socket, setSocket] = useState(null);
-
-  // 1. Listen for DIGITAL_SUITE_INIT from OS
-  useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.data?.type === 'DIGITAL_SUITE_INIT') {
-        const payload = event.data.payload;
-        if (payload?.sessionToken && payload?.apiBaseUrl) {
-          setSessionToken(payload.sessionToken);
-          setApiBaseUrl(payload.apiBaseUrl);
-        }
-      }
-    };
-    
-    // Announce to OS that we are ready to receive init!
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: 'DIGITAL_SUITE_REGISTER', navigation: [] }, '*');
-    }
-    
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  // 2. Fetch Initial Accounts once we have tokens
-  useEffect(() => {
-    if (!sessionToken || !apiBaseUrl) return;
-
-    const fetchAccounts = async () => {
-      try {
-        const res = await fetch(`${apiBaseUrl}/api/v1/accounts`, {
-          headers: { Authorization: `Bearer ${sessionToken}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setConnectedAccounts(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch accounts', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchAccounts();
-  }, [sessionToken, apiBaseUrl]);
 
   // 3. Connect WebSocket for Real-time OAuth updates
   useEffect(() => {
