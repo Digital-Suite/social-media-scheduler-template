@@ -74,8 +74,9 @@ const platforms = [
     icon: FaPinterest,
     iconColor: 'text-white',
     bgColor: 'bg-red-600',
-    description: 'Visual discovery & ideas',
+    description: 'Temporarily unavailable',
     followers: null,
+    disabled: true,
   },
   {
     id: 'bluesky',

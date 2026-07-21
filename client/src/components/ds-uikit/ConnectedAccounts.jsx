@@ -147,12 +147,14 @@ export function ConnectedAccounts({ platforms }) {
           // Check if this provider is found in connectedAccounts
           const accountData = connectedAccounts.find(a => a.provider.toLowerCase() === platform.id.toLowerCase());
           const isConnected = !!accountData;
+          const isExpired = accountData?.isExpired;
 
           return (
             <div
               key={platform.id}
               className={`bg-ds-surface border rounded-xl p-5 flex items-center justify-between transition-all duration-200 ${
-                isConnected ? 'border-ds-primary/40 shadow-lg shadow-ds-primary/5' : 'border-ds-border hover:border-ds-border/80'
+                isConnected && !isExpired ? 'border-ds-primary/40 shadow-lg shadow-ds-primary/5' : 
+                isExpired ? 'border-orange-500/40 shadow-lg shadow-orange-500/5' : 'border-ds-border hover:border-ds-border/80'
               }`}
             >
               <div className="flex items-center gap-4">
@@ -161,8 +163,10 @@ export function ConnectedAccounts({ platforms }) {
                 </div>
                 <div>
                   <p className="font-semibold text-ds-text text-sm">{platform.name}</p>
-                  {isConnected ? (
+                  {isConnected && !isExpired ? (
                     <p className="text-ds-textMuted text-xs mt-0.5 text-green-500 font-medium">✓ Securely Linked</p>
+                  ) : isExpired ? (
+                    <p className="text-ds-textMuted text-xs mt-0.5 text-orange-400 font-medium">⚠️ Token Expired</p>
                   ) : (
                     <p className="text-ds-textMuted text-xs mt-0.5">{platform.description}</p>
                   )}
@@ -170,14 +174,19 @@ export function ConnectedAccounts({ platforms }) {
               </div>
 
               <button
-                onClick={() => isConnected ? handleDisconnect(platform.id) : handleConnect(platform.id)}
+                disabled={platform.disabled && !isConnected}
+                onClick={() => isExpired || !isConnected ? handleConnect(platform.id) : handleDisconnect(platform.id)}
                 className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  isConnected
+                  isConnected && !isExpired
                     ? 'bg-ds-surface border border-ds-border text-ds-textMuted hover:bg-ds-background hover:text-red-400 hover:border-red-500/30'
+                    : isExpired
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-500/20'
+                    : platform.disabled
+                    ? 'bg-ds-surface border border-ds-border text-ds-textMuted opacity-50 cursor-not-allowed'
                     : 'bg-ds-primary hover:bg-ds-primaryHover text-ds-background shadow-sm shadow-ds-primary/20'
                 }`}
               >
-                {isConnected ? 'Disconnect' : '+ Connect'}
+                {isConnected && !isExpired ? 'Disconnect' : isExpired ? 'Reconnect' : platform.disabled ? 'Unavailable' : '+ Connect'}
               </button>
             </div>
           );
