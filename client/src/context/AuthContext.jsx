@@ -19,10 +19,6 @@ export function AuthProvider({ children }) {
       }
     };
     
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: 'DIGITAL_SUITE_REGISTER', navigation: [] }, '*');
-    }
-    
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
