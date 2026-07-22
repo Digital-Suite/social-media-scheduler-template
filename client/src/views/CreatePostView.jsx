@@ -301,8 +301,8 @@ export function CreatePostView() {
                       </div>
                     </div>
                     <div className="flex flex-col truncate">
-                      <span className="text-sm font-medium text-ds-text leading-tight truncate">{acc.metadata?.username || 'User'}</span>
-                      <span className="text-xs text-ds-textMuted leading-tight truncate">@{acc.provider}</span>
+                      <span className="text-sm font-medium text-ds-text leading-tight truncate">{acc.metadata?.name || acc.metadata?.username || 'User'}</span>
+                      <span className="text-xs text-ds-textMuted leading-tight truncate">@{acc.metadata?.handle || acc.metadata?.username || acc.provider}</span>
                     </div>
                   </label>
                 ))}
@@ -382,7 +382,7 @@ export function CreatePostView() {
                   {connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(acc => (
                     <div key={acc.id} className="flex items-center gap-1.5 px-2 py-1 bg-ds-background border border-ds-border rounded-md shrink-0">
                       <PlatformIcon platform={acc.provider} />
-                      <span className="text-xs font-medium text-ds-text">{acc.metadata?.username || 'User'}</span>
+                      <span className="text-xs font-medium text-ds-text">{acc.metadata?.name || acc.metadata?.username || 'User'}</span>
                     </div>
                   ))}
                 </div>
@@ -395,7 +395,7 @@ export function CreatePostView() {
                   <div className="flex items-center justify-between p-3 border-b border-ds-border bg-ds-surface/50 rounded-t-xl">
                     <div className="flex items-center gap-2">
                       <PlatformIcon platform={acc.provider} />
-                      <span className="text-sm font-medium text-ds-text">{acc.metadata?.username || 'User'}</span>
+                      <span className="text-sm font-medium text-ds-text">{acc.metadata?.name || acc.metadata?.username || 'User'}</span>
                     </div>
                   </div>
                   
