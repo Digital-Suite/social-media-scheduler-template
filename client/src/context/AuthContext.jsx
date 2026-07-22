@@ -32,7 +32,14 @@ export function AuthProvider({ children }) {
           headers: { Authorization: `Bearer ${sessionToken}` }
         });
         if (res.ok) {
-          const data = await res.json();
+          let data = await res.json();
+          // Ensure metadata is parsed properly in case the backend sent it as a string
+          data = data.map(acc => {
+            if (acc.metadata && typeof acc.metadata === 'string') {
+              try { acc.metadata = JSON.parse(acc.metadata); } catch(e) {}
+            }
+            return acc;
+          });
           setConnectedAccounts(data);
         }
       } catch (err) {
