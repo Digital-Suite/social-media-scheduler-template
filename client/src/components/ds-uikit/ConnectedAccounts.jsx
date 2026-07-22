@@ -19,9 +19,9 @@ export function ConnectedAccounts({ platforms }) {
     newSocket.on('social:oauth_success', (data) => {
       if (data && data.account) {
         setConnectedAccounts(prev => {
-          const exists = prev.find(a => a.provider === data.account.provider);
+          const exists = prev.find(a => a.id === data.account.id);
           if (exists) {
-            return prev.map(a => a.provider === data.account.provider ? data.account : a);
+            return prev.map(a => a.id === data.account.id ? data.account : a);
           }
           return [...prev, data.account];
         });
