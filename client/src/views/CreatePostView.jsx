@@ -242,8 +242,8 @@ export function CreatePostView() {
             postTime: utcPostTime,
             sessionToken: sessionToken,
             apiBaseUrl: apiBaseUrl,
-            authorName: account.metadata?.name || null,
-            authorHandle: account.metadata?.handle || null,
+            authorName: account.metadata?.name || account.metadata?.username || null,
+            authorHandle: account.metadata?.handle || account.metadata?.username || null,
             // FIX: Ensure picture is extracted properly
             authorAvatarUrl: account.metadata?.picture || null
           })

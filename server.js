@@ -86,6 +86,7 @@ async function initDb() {
     try { await dbRun('ALTER TABLE posts ADD COLUMN author_name TEXT;'); } catch(e) {}
     try { await dbRun('ALTER TABLE posts ADD COLUMN author_handle TEXT;'); } catch(e) {}
     try { await dbRun('ALTER TABLE posts ADD COLUMN author_avatar_url TEXT;'); } catch(e) {}
+    try { await dbRun('ALTER TABLE posts ADD COLUMN account_id INTEGER;'); } catch(e) {}
   } catch (err) {
     console.error('Failed to initialize database:', err);
   }
@@ -136,16 +137,12 @@ app.post('/api/upload', upload.single('media'), (req, res) => {
 });
 
 app.post('/api/posts', async (req, res) => {
-  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl } = req.body;
+  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl, accountId } = req.body;
   
-  // ensure content isn't strictly null to pass constraint if it's purely media
-  const safeContent = content || '';
-  const tagsStr = Array.isArray(hashtags) ? JSON.stringify(hashtags) : null;
-
   try {
     const result = await dbRun(
-      'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url, author_name, author_handle, author_avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [platform, title || null, safeContent, tagsStr, mediaUrl || null, postTime, sessionToken, apiBaseUrl, authorName || null, authorHandle || null, authorAvatarUrl || null]
+      'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url, status, author_name, author_handle, author_avatar_url, account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [platform, title || null, content || '', JSON.stringify(hashtags || []), mediaUrl || null, postTime, sessionToken, apiBaseUrl, 'scheduled', authorName || null, authorHandle || null, authorAvatarUrl || null, accountId || null]
     );
     const newPost = await dbGet('SELECT * FROM posts WHERE id = ?', [result.lastID]);
     newPost.post_time = newPost.post_time ? `${newPost.post_time}Z`.replace(' ', 'T') : newPost.post_time;
@@ -204,7 +201,8 @@ cron.schedule('* * * * *', async () => {
             title: post.title,
             content: post.content,
             hashtags: post.hashtags ? JSON.parse(post.hashtags) : undefined,
-            mediaUrl: post.media_url
+            mediaUrl: post.media_url,
+            accountId: post.account_id
           })
         });
 
