@@ -11,7 +11,9 @@ import {
   Hash,
   CheckCircle2,
   CalendarClock,
-  ArrowLeft
+  ArrowLeft,
+  X as XIcon,
+  Video as VideoIcon
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
@@ -43,17 +45,65 @@ export function CreatePostView() {
   };
 
   const [selectedAccounts, setSelectedAccounts] = useState([]);
-  const [caption, setCaption] = useState("Excited to announce our new feature! 🚀\n\n#SaaS");
+  const [title, setTitle] = useState('');
+  const [caption, setCaption] = useState('');
+  const [hashtags, setHashtags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [useSameCaption, setUseSameCaption] = useState(true);
   const [platformCaptions, setPlatformCaptions] = useState({});
+  const [platformTitles, setPlatformTitles] = useState({});
   const [postTime, setPostTime] = useState(getInitialTime());
-  const [mediaUrl, setMediaUrl] = useState('https://www.w3schools.com/html/mov_bbb.mp4'); // Dummy video
+  const [mediaUrl, setMediaUrl] = useState(''); 
+  const [isUploading, setIsUploading] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
+  const fileInputRef = React.useRef(null);
 
   const toggleAccount = (id) => {
     setSelectedAccounts(prev => 
       prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
     );
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('media', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMediaUrl(data.url);
+      } else {
+        alert("Upload failed.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error during upload.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const addTag = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const newTag = tagInput.trim().replace(/^#/, '');
+      if (newTag && !hashtags.includes(newTag) && hashtags.length < 5) {
+        setHashtags([...hashtags, newTag]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setHashtags(hashtags.filter(t => t !== tagToRemove));
   };
 
   const handleSchedule = async () => {
@@ -72,6 +122,7 @@ export function CreatePostView() {
         const account = connectedAccounts.find(a => a.id === accountId);
         if (!account) continue;
 
+        const postTitle = useSameCaption ? title : (platformTitles[accountId] || title);
         const postCaption = useSameCaption ? caption : (platformCaptions[accountId] || caption);
         
         await fetch('/api/posts', {
@@ -79,7 +130,9 @@ export function CreatePostView() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             platform: account.provider,
+            title: postTitle,
             content: postCaption,
+            hashtags: hashtags.length > 0 ? hashtags : undefined,
             mediaUrl: mediaUrl,
             postTime: postTime,
             sessionToken: sessionToken,
@@ -156,22 +209,60 @@ export function CreatePostView() {
               <h3 className="font-semibold text-ds-text">Media <span className="text-ds-textMuted font-normal">(optional)</span></h3>
             </div>
             
-            <div className="border-2 border-dashed border-ds-border hover:border-ds-primary/50 transition-colors rounded-xl p-8 bg-ds-background/50 flex flex-col items-center justify-center gap-4 relative">
-              <div className="absolute top-4 right-4 flex gap-2">
-                <button className="flex items-center gap-1.5 text-xs font-medium bg-ds-surface border border-ds-border px-3 py-1.5 rounded-lg text-ds-text hover:bg-ds-border">
-                  <ImageIcon className="w-3.5 h-3.5" /> Files
-                </button>
-              </div>
+            <div 
+              onClick={() => !mediaUrl && !isUploading && fileInputRef.current?.click()}
+              className={`border-2 border-dashed ${mediaUrl ? 'border-transparent' : 'border-ds-border hover:border-ds-primary/50 cursor-pointer'} transition-colors rounded-xl p-0 bg-ds-background/50 flex flex-col items-center justify-center relative overflow-hidden min-h-[200px]`}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="video/*,image/*" 
+                onChange={handleFileUpload}
+              />
               
-              <div className="flex flex-col items-center gap-2 text-center mt-2">
-                <div className="w-12 h-12 bg-ds-surface rounded-full flex items-center justify-center mb-2">
-                  <UploadCloud className="w-6 h-6 text-ds-textMuted" />
+              {isUploading && (
+                <div className="absolute inset-0 bg-ds-background/80 flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-ds-primary border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm font-medium text-ds-text">Uploading...</span>
+                  </div>
                 </div>
-                <p className="font-medium text-ds-text text-lg">Drag & Drop</p>
-                <p className="text-ds-textMuted text-sm">or click to browse</p>
-              </div>
+              )}
 
-
+              {mediaUrl ? (
+                <div className="w-full h-full relative group flex items-center justify-center bg-black">
+                  {(mediaUrl.endsWith('.mp4') || mediaUrl.endsWith('.webm') || mediaUrl.endsWith('.mov')) ? (
+                    <video src={mediaUrl} controls className="w-full max-h-[300px] object-contain" />
+                  ) : (
+                    <img src={mediaUrl} alt="Preview" className="w-full max-h-[300px] object-contain" />
+                  )}
+                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setMediaUrl(''); }}
+                      className="bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-lg backdrop-blur-sm transition-colors"
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="absolute top-4 right-4 flex gap-2">
+                    <button className="flex items-center gap-1.5 text-xs font-medium bg-ds-surface border border-ds-border px-3 py-1.5 rounded-lg text-ds-text hover:bg-ds-border">
+                      <ImageIcon className="w-3.5 h-3.5" /> Browse Files
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-col items-center gap-2 text-center mt-2 pointer-events-none">
+                    <div className="w-12 h-12 bg-ds-surface rounded-full flex items-center justify-center mb-2">
+                      <UploadCloud className="w-6 h-6 text-ds-textMuted" />
+                    </div>
+                    <p className="font-medium text-ds-text text-lg">Drag & Drop</p>
+                    <p className="text-ds-textMuted text-sm">or click to browse</p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -239,20 +330,51 @@ export function CreatePostView() {
           
           {useSameCaption ? (
             <div className="bg-ds-background border border-ds-border rounded-xl flex flex-col relative flex-1 min-h-[300px]">
-              <div className="flex items-center justify-between p-3 border-b border-ds-border bg-ds-surface/50 rounded-t-xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-ds-text">Caption for all platforms</span>
-                </div>
-                <span className="text-xs font-mono text-ds-textMuted">{caption.length}/3000</span>
-              </div>
               
+              {/* Title Field */}
+              <div className="p-3 border-b border-ds-border bg-ds-surface/50 rounded-t-xl">
+                <input 
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Title (optional, e.g., for YouTube)"
+                  className="w-full bg-transparent text-ds-text font-bold placeholder-ds-textMuted outline-none text-sm"
+                />
+              </div>
+
+              {/* Caption Area */}
               <div className="relative p-4 flex-1 flex flex-col">
                 <textarea 
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  className="w-full flex-1 bg-transparent text-ds-text placeholder-ds-textMuted resize-none outline-none focus:ring-0 text-sm leading-relaxed custom-scrollbar"
+                  className="w-full flex-1 bg-transparent text-ds-text placeholder-ds-textMuted resize-none outline-none focus:ring-0 text-sm leading-relaxed custom-scrollbar min-h-[120px]"
                   placeholder="Write your caption here..."
                 />
+              </div>
+
+              {/* Hashtags UI */}
+              <div className="p-3 border-t border-ds-border bg-ds-surface/30">
+                <div className="flex flex-wrap gap-2 items-center">
+                  {hashtags.map(tag => (
+                    <span key={tag} className="flex items-center gap-1.5 px-2.5 py-1 bg-ds-primary/10 text-ds-primary border border-ds-primary/20 rounded-md text-xs font-medium">
+                      #{tag}
+                      <button onClick={() => removeTag(tag)} className="hover:text-ds-primaryHover"><XIcon className="w-3 h-3" /></button>
+                    </span>
+                  ))}
+                  {hashtags.length < 5 && (
+                    <input 
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={addTag}
+                      placeholder={hashtags.length === 0 ? "Add hashtags (press Enter)" : "Add another tag..."}
+                      className="bg-transparent text-sm text-ds-text placeholder-ds-textMuted outline-none flex-1 min-w-[150px]"
+                    />
+                  )}
+                </div>
+                <div className="text-[10px] text-ds-textMuted mt-1.5 text-right">
+                  {caption.length}/3000 chars · {hashtags.length}/5 tags
+                </div>
               </div>
 
               {selectedAccounts.length > 0 && (
@@ -269,21 +391,57 @@ export function CreatePostView() {
           ) : (
             <div className="flex flex-col gap-4 flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-[300px]">
               {connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(acc => (
-                <div key={acc.id} className="bg-ds-background border border-ds-border rounded-xl flex flex-col relative min-h-[200px] shrink-0">
+                <div key={acc.id} className="bg-ds-background border border-ds-border rounded-xl flex flex-col relative min-h-[250px] shrink-0">
                   <div className="flex items-center justify-between p-3 border-b border-ds-border bg-ds-surface/50 rounded-t-xl">
                     <div className="flex items-center gap-2">
                       <PlatformIcon platform={acc.provider} />
                       <span className="text-sm font-medium text-ds-text">{acc.metadata?.username || 'User'}</span>
                     </div>
-                    <span className="text-xs font-mono text-ds-textMuted">{(platformCaptions[acc.id] || '').length}/3000</span>
                   </div>
+                  
+                  {/* Per-platform Title Field */}
+                  <div className="p-3 border-b border-ds-border/50">
+                    <input 
+                      type="text"
+                      value={platformTitles[acc.id] || ''}
+                      onChange={(e) => setPlatformTitles({...platformTitles, [acc.id]: e.target.value})}
+                      placeholder="Title (optional)"
+                      className="w-full bg-transparent text-ds-text font-bold placeholder-ds-textMuted outline-none text-sm"
+                    />
+                  </div>
+
                   <div className="relative p-4 flex-1 flex flex-col">
                     <textarea 
                       value={platformCaptions[acc.id] || ''}
                       onChange={(e) => setPlatformCaptions({...platformCaptions, [acc.id]: e.target.value})}
-                      className="w-full flex-1 bg-transparent text-ds-text placeholder-ds-textMuted resize-none outline-none focus:ring-0 text-sm leading-relaxed custom-scrollbar"
+                      className="w-full flex-1 bg-transparent text-ds-text placeholder-ds-textMuted resize-none outline-none focus:ring-0 text-sm leading-relaxed custom-scrollbar min-h-[80px]"
                       placeholder={`Write your caption for ${acc.provider.charAt(0).toUpperCase() + acc.provider.slice(1)}...`}
                     />
+                  </div>
+                  
+                  {/* Hashtags UI */}
+                  <div className="p-3 border-t border-ds-border bg-ds-surface/30">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {hashtags.map(tag => (
+                        <span key={tag} className="flex items-center gap-1.5 px-2 py-0.5 bg-ds-primary/10 text-ds-primary border border-ds-primary/20 rounded text-[10px] font-medium">
+                          #{tag}
+                          <button onClick={() => removeTag(tag)} className="hover:text-ds-primaryHover"><XIcon className="w-2.5 h-2.5" /></button>
+                        </span>
+                      ))}
+                      {hashtags.length < 5 && (
+                        <input 
+                          type="text"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={addTag}
+                          placeholder="Add tags..."
+                          className="bg-transparent text-xs text-ds-text placeholder-ds-textMuted outline-none flex-1 min-w-[100px]"
+                        />
+                      )}
+                    </div>
+                    <div className="text-[10px] text-ds-textMuted mt-1.5 text-right">
+                      {(platformCaptions[acc.id] || '').length}/3000 chars · {hashtags.length}/5 tags
+                    </div>
                   </div>
                 </div>
               ))}

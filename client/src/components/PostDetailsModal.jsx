@@ -150,9 +150,30 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
               {/* Caption */}
               <div>
                 <div className="text-sm font-semibold text-ds-textMuted mb-2">Caption</div>
-                <div className="text-sm text-ds-text whitespace-pre-wrap leading-relaxed">
+                {post.title && (
+                  <h3 className="font-bold text-ds-text text-lg mb-2">{post.title}</h3>
+                )}
+                
+                <p className="text-ds-text whitespace-pre-wrap leading-relaxed text-sm">
                   {post.content}
-                </div>
+                </p>
+                
+                {post.hashtags && (
+                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-ds-border">
+                    {(() => {
+                      try {
+                        const tags = JSON.parse(post.hashtags);
+                        return tags.map(tag => (
+                          <span key={tag} className="px-2 py-1 bg-ds-surface border border-ds-border rounded-md text-xs font-medium text-ds-textMuted">
+                            #{tag}
+                          </span>
+                        ));
+                      } catch(e) {
+                        return null;
+                      }
+                    })()}
+                  </div>
+                )}
               </div>
 
               {/* Media */}

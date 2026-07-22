@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 const cron = require('node-cron');
+const multer = require('multer');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,9 +19,15 @@ app.use(express.static(path.join(__dirname, 'client/dist')));
 
 // Ensure data directory exists
 const dataDir = process.env.NODE_ENV === 'production' ? '/app/data' : path.join(__dirname, 'data');
+const uploadsDir = path.join(dataDir, 'uploads');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.use('/uploads', express.static(uploadsDir));
 
 // Database connection
 const dbPath = path.join(dataDir, 'database.sqlite');
@@ -57,7 +64,9 @@ async function initDb() {
       CREATE TABLE IF NOT EXISTS posts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         platform VARCHAR(50) NOT NULL,
+        title TEXT,
         content TEXT NOT NULL,
+        hashtags TEXT,
         media_url TEXT,
         post_time DATETIME NOT NULL,
         status VARCHAR(20) DEFAULT 'scheduled',
@@ -67,11 +76,28 @@ async function initDb() {
       );
     `);
     console.log('Database initialized successfully.');
+
+    // Migration for existing tables
+    try { await dbRun('ALTER TABLE posts ADD COLUMN title TEXT;'); } catch(e) {}
+    try { await dbRun('ALTER TABLE posts ADD COLUMN hashtags TEXT;'); } catch(e) {}
   } catch (err) {
     console.error('Failed to initialize database:', err);
   }
 }
 initDb();
+
+// Setup Multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir)
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext)
+  }
+})
+const upload = multer({ storage: storage })
 
 // API Routes
 app.get('/api/health', (req, res) => {
@@ -87,12 +113,25 @@ app.get('/api/posts', async (req, res) => {
   }
 });
 
+app.post('/api/upload', upload.single('media'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ url: fileUrl });
+});
+
 app.post('/api/posts', async (req, res) => {
-  const { platform, content, mediaUrl, postTime, sessionToken, apiBaseUrl } = req.body;
+  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl } = req.body;
+  
+  // ensure content isn't strictly null to pass constraint if it's purely media
+  const safeContent = content || '';
+  const tagsStr = Array.isArray(hashtags) ? JSON.stringify(hashtags) : null;
+
   try {
     const result = await dbRun(
-      'INSERT INTO posts (platform, content, media_url, post_time, session_token, api_base_url) VALUES (?, ?, ?, ?, ?, ?)',
-      [platform, content, mediaUrl, postTime, sessionToken, apiBaseUrl]
+      'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [platform, title || null, safeContent, tagsStr, mediaUrl || null, postTime, sessionToken, apiBaseUrl]
     );
     const newPost = await dbGet('SELECT * FROM posts WHERE id = ?', [result.lastID]);
     res.json(newPost);
@@ -133,7 +172,9 @@ cron.schedule('* * * * *', async () => {
           },
           body: JSON.stringify({
             platform: post.platform,
+            title: post.title,
             content: post.content,
+            hashtags: post.hashtags ? JSON.parse(post.hashtags) : undefined,
             mediaUrl: post.media_url
           })
         });
