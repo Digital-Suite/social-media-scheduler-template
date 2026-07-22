@@ -245,7 +245,8 @@ export function CreatePostView() {
             authorName: account.metadata?.name || account.metadata?.username || null,
             authorHandle: account.metadata?.handle || account.metadata?.username || null,
             // FIX: Ensure picture is extracted properly
-            authorAvatarUrl: account.metadata?.picture || null
+            authorAvatarUrl: account.metadata?.picture || null,
+            accountId: account.id
           })
         });
       }
