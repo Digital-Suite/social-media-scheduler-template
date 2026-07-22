@@ -225,6 +225,33 @@ cron.schedule('* * * * *', async () => {
   }
 });
 
+// Cron Job for cleaning up old media files (runs daily at midnight)
+cron.schedule('0 0 * * *', async () => {
+  console.log('Running daily media cleanup...');
+  try {
+    const files = fs.readdirSync(uploadsDir);
+    const now = Date.now();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+    for (const file of files) {
+      const filePath = path.join(uploadsDir, file);
+      const stats = fs.statSync(filePath);
+      
+      if (now - stats.mtimeMs > SEVEN_DAYS_MS) {
+        // Check if file is referenced by any scheduled post
+        const row = await dbGet("SELECT count(*) as count FROM posts WHERE status = 'scheduled' AND media_url LIKE ?", [`%${file}`]);
+        if (row && row.count === 0) {
+          console.log(`Deleting old unused media file: ${file}`);
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error in media cleanup cron job:', err);
+  }
+});
+
+
 // SPA Catch-all route MUST be last
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'API route not found' });
