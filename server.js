@@ -214,6 +214,14 @@ cron.schedule('* * * * *', async () => {
           console.error(`Failed to publish post ${post.id}:`, data);
           await dbRun("UPDATE posts SET status = 'failed' WHERE id = ?", [post.id]);
         }
+
+        // Emit updated post to all connected clients
+        const updatedPost = await dbGet('SELECT * FROM posts WHERE id = ?', [post.id]);
+        if (updatedPost) {
+          updatedPost.post_time = updatedPost.post_time ? `${updatedPost.post_time}Z`.replace(' ', 'T') : updatedPost.post_time;
+          updatedPost.created_at = updatedPost.created_at ? `${updatedPost.created_at}Z`.replace(' ', 'T') : updatedPost.created_at;
+          io.emit('post_updated', updatedPost);
+        }
       } catch (err) {
         console.error(`Network error publishing post ${post.id}:`, err);
       }

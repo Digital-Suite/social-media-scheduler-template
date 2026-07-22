@@ -138,7 +138,40 @@ export function CalendarView() {
       }
     };
     fetchPosts();
-  }, [currentDate]); // Re-fetch occasionally
+
+      // Socket.io connection
+      import('socket.io-client').then(({ io }) => {
+        const socket = io(); // Connects to the same host
+        socket.on('post_updated', (updatedPost) => {
+          setRealPosts(prev => {
+            const index = prev.findIndex(p => p.id === updatedPost.id);
+            if (index === -1) return prev; // if it's new, we could also append it, but we only need updates for now
+            
+            const newPosts = [...prev];
+            newPosts[index] = {
+              ...newPosts[index],
+              status: updatedPost.status
+            };
+            return newPosts;
+          });
+
+          setSelectedPosts(prev => {
+            if (!prev) return prev;
+            const index = prev.findIndex(p => p.id === updatedPost.id);
+            if (index === -1) return prev;
+            
+            const newPosts = [...prev];
+            newPosts[index] = {
+              ...newPosts[index],
+              status: updatedPost.status
+            };
+            return newPosts;
+          });
+        });
+
+        return () => socket.disconnect();
+      }).catch(err => console.error('Failed to load socket.io-client', err));
+  }, [timezone]); // Re-fetch occasionally
 
   const handleDeletePost = async (id) => {
     try {
