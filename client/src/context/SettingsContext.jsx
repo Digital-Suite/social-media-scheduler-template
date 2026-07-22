@@ -40,9 +40,10 @@ const SettingsContext = createContext(null);
 
 export function SettingsProvider({ children }) {
   const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
+  const [timeFormat, setTimeFormat] = useState('24h'); // '12h' or '24h'
 
   return (
-    <SettingsContext.Provider value={{ timezone, setTimezone }}>
+    <SettingsContext.Provider value={{ timezone, setTimezone, timeFormat, setTimeFormat }}>
       {children}
     </SettingsContext.Provider>
   );

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Globe, Check, Search, ChevronDown } from 'lucide-react';
+import { Globe, Check, Search, ChevronDown, Clock } from 'lucide-react';
 import { useSettings, TIMEZONES } from '../context/SettingsContext';
 
 export function SettingsView() {
-  const { timezone, setTimezone } = useSettings();
+  const { timezone, setTimezone, timeFormat, setTimeFormat } = useSettings();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -119,6 +119,49 @@ export function SettingsView() {
           >
             {saved ? '✓ Saved' : 'Save Changes'}
           </button>
+        </div>
+      </div>
+
+      {/* Time Format Card */}
+      <div className="bg-ds-surface border border-ds-border rounded-2xl mt-6">
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-ds-border rounded-t-2xl">
+          <div className="w-9 h-9 rounded-xl bg-ds-primary/10 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-ds-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-ds-text text-sm">Time Format</p>
+            <p className="text-xs text-ds-textMuted mt-0.5">Choose how time is displayed across the app.</p>
+          </div>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-3">
+          <label className="flex items-center justify-between p-4 border border-ds-border rounded-xl cursor-pointer hover:border-ds-primary/50 transition-colors">
+            <div>
+              <p className="text-sm font-medium text-ds-text">12-hour format</p>
+              <p className="text-xs text-ds-textMuted mt-0.5">e.g., 1:52 PM</p>
+            </div>
+            <input 
+              type="radio" 
+              name="timeFormat" 
+              value="12h" 
+              checked={timeFormat === '12h'} 
+              onChange={() => setTimeFormat('12h')}
+              className="w-4 h-4 text-ds-primary bg-ds-background border-ds-border focus:ring-ds-primary"
+            />
+          </label>
+          <label className="flex items-center justify-between p-4 border border-ds-border rounded-xl cursor-pointer hover:border-ds-primary/50 transition-colors">
+            <div>
+              <p className="text-sm font-medium text-ds-text">24-hour format</p>
+              <p className="text-xs text-ds-textMuted mt-0.5">e.g., 13:52</p>
+            </div>
+            <input 
+              type="radio" 
+              name="timeFormat" 
+              value="24h" 
+              checked={timeFormat === '24h'} 
+              onChange={() => setTimeFormat('24h')}
+              className="w-4 h-4 text-ds-primary bg-ds-background border-ds-border focus:ring-ds-primary"
+            />
+          </label>
         </div>
       </div>
     </div>

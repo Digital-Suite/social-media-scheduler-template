@@ -91,7 +91,7 @@ function generateMockPosts(dateStr) {
 
 export function CalendarView() {
   const navigate = useNavigate();
-  const { timezone } = useSettings();
+  const { timezone, timeFormat } = useSettings();
   const { sessionToken, apiBaseUrl } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hoveredPost, setHoveredPost] = useState(null);
@@ -121,7 +121,7 @@ export function CalendarView() {
           const formattedPosts = data.map(p => ({
             id: p.id,
             platform: p.platform,
-            time: formatInTimeZone(new Date(p.post_time), timezone.value, 'HH:mm'),
+            time: formatInTimeZone(new Date(p.post_time), timezone.value, timeFormat === '12h' ? 'h:mm a' : 'HH:mm'),
             date: formatInTimeZone(new Date(p.post_time), timezone.value, 'yyyy-MM-dd'),
             fullDate: new Date(p.post_time),
             postTime: p.post_time,
@@ -314,9 +314,6 @@ export function CalendarView() {
         </h2>
         
         <div className="flex items-center gap-3">
-          <button className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center border border-yellow-500/50">
-            <Trophy className="w-4 h-4" />
-          </button>
           <button onClick={goToToday} className="px-4 py-1.5 border border-ds-border rounded-lg text-sm font-medium hover:bg-ds-surface">
             Today
           </button>
