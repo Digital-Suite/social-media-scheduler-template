@@ -138,6 +138,28 @@ export function CalendarView() {
     fetchPosts();
   }, [currentDate]); // Re-fetch occasionally
 
+  const handleDeletePost = async (id) => {
+    try {
+      const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setRealPosts(prev => prev.filter(p => p.id !== id));
+        if (selectedPosts) {
+          const updated = selectedPosts.filter(p => p.id !== id);
+          if (updated.length > 0) {
+            setSelectedPosts(updated);
+          } else {
+            setSelectedPosts(null);
+          }
+        }
+      } else {
+        alert('Failed to delete post');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error deleting post');
+    }
+  };
+
   // Memoize data to group by date
   const postsByDate = React.useMemo(() => {
     const map = {};
@@ -516,6 +538,7 @@ export function CalendarView() {
         isOpen={!!selectedPosts} 
         posts={selectedPosts} 
         onClose={() => setSelectedPosts(null)} 
+        onDelete={handleDeletePost}
       />
 
     </div>

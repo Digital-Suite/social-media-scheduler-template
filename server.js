@@ -101,6 +101,16 @@ app.post('/api/posts', async (req, res) => {
   }
 });
 
+app.delete('/api/posts/:id', async (req, res) => {
+  try {
+    await dbRun('DELETE FROM posts WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // Cron Job for publishing posts
 cron.schedule('* * * * *', async () => {
   console.log('Checking for scheduled posts...');

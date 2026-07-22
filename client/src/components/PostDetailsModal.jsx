@@ -17,7 +17,7 @@ import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
-export function PostDetailsModal({ isOpen, posts, onClose }) {
+export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -75,9 +75,19 @@ export function PostDetailsModal({ isOpen, posts, onClose }) {
                 </h2>
                 <p className="text-ds-textMuted text-sm">View and manage your social media post</p>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-ds-surface rounded-full text-ds-textMuted hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {onDelete && post.status !== 'published' && (
+                  <button 
+                    onClick={() => onDelete(post.id)} 
+                    className="px-3 py-1.5 hover:bg-red-500/10 rounded-lg text-red-400 hover:text-red-500 text-sm font-bold transition-colors"
+                  >
+                    Delete Post
+                  </button>
+                )}
+                <button onClick={onClose} className="p-2 hover:bg-ds-surface rounded-full text-ds-textMuted hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-1 overflow-hidden">
