@@ -265,11 +265,44 @@ app.use((req, res) => {
 });
 
 // Socket.io for Realtime Health Check Architecture
+const pkg = require('./package.json');
 io.on('connection', (socket) => {
-  socket.emit('health', { status: 'Online', version: '1.0.0' });
+  socket.emit('health', { status: 'Online', version: pkg.version });
+
+  let updateInterval;
+
+  socket.on('register_session', async (data) => {
+    const checkUpdates = async () => {
+      try {
+        const res = await fetch(`${data.apiBaseUrl}/api/v1/apps`, {
+          headers: { Authorization: `Bearer ${data.sessionToken}` }
+        });
+        if (res.ok) {
+          const apps = await res.json();
+          const me = apps.find(a => a.name === 'Social Media Scheduler');
+          if (me && me.latestVersion && me.latestVersion !== pkg.version) {
+            // Simple string comparison works for semantic versioning assuming same digit counts, 
+            // but for safety let's just check if it's different and assume newer since we only bump forward
+            socket.emit('update_available', { version: me.latestVersion });
+          }
+        }
+      } catch (err) {
+        console.error('Update check failed', err);
+      }
+    };
+
+    // Check immediately
+    await checkUpdates();
+    // Then check every 30 seconds
+    updateInterval = setInterval(checkUpdates, 30000);
+  });
+
+  socket.on('disconnect', () => {
+    if (updateInterval) clearInterval(updateInterval);
+  });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Social Media Scheduler running on port ${PORT}`);
 });

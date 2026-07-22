@@ -42,6 +42,7 @@ import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
 import { PostDetailsModal } from '../components/PostDetailsModal';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 import { formatInTimeZone } from 'date-fns-tz';
 
 function cn(...inputs) {
@@ -91,10 +92,12 @@ function generateMockPosts(dateStr) {
 export function CalendarView() {
   const navigate = useNavigate();
   const { timezone } = useSettings();
+  const { sessionToken, apiBaseUrl } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hoveredPost, setHoveredPost] = useState(null);
   const [selectedPosts, setSelectedPosts] = useState(null);
   const [viewMode, setViewMode] = useState('monthly'); // 'monthly' | 'weekly'
+  const [updateAvailable, setUpdateAvailable] = useState(null);
 
   // Date Ranges
   const monthStart = startOfMonth(currentDate);
@@ -142,6 +145,17 @@ export function CalendarView() {
       // Socket.io connection
       import('socket.io-client').then(({ io }) => {
         const socket = io(); // Connects to the same host
+        
+        socket.on('connect', () => {
+          if (apiBaseUrl && sessionToken) {
+            socket.emit('register_session', { apiBaseUrl, sessionToken });
+          }
+        });
+
+        socket.on('update_available', (data) => {
+          setUpdateAvailable(data.version);
+        });
+
         socket.on('post_updated', (updatedPost) => {
           setRealPosts(prev => {
             const index = prev.findIndex(p => p.id === updatedPost.id);
@@ -238,7 +252,24 @@ export function CalendarView() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden relative">
+      
+      {updateAvailable && (
+        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-[#D4AF37]/10 border-b border-[#D4AF37]/30 backdrop-blur-md">
+          <div className="flex items-center gap-3 text-[#D4AF37]">
+            <BadgeCheck className="w-5 h-5" />
+            <div className="text-sm">
+              <span className="font-semibold">Update Available!</span> Version {updateAvailable} is ready.
+            </div>
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-xs font-semibold px-3 py-1.5 bg-[#D4AF37] text-black rounded-md hover:bg-[#F3E5AB] transition-colors"
+          >
+            Update Now
+          </button>
+        </div>
+      )}
       
       {/* Top Toolbar */}
       <div className="flex items-center justify-between p-4 border-b border-ds-border bg-ds-surface shrink-0">
