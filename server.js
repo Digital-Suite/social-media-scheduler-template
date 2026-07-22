@@ -75,9 +75,28 @@ async function initDb() {
         author_name TEXT,
         author_handle TEXT,
         author_avatar_url TEXT,
+        account_id INTEGER,
+        workspace_id INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS workspace_accounts (
+        workspace_id INTEGER,
+        account_id TEXT,
+        PRIMARY KEY (workspace_id, account_id)
+      );
+    `);
+
     console.log('Database initialized successfully.');
 
     // Migration for existing tables
@@ -87,6 +106,7 @@ async function initDb() {
     try { await dbRun('ALTER TABLE posts ADD COLUMN author_handle TEXT;'); } catch(e) {}
     try { await dbRun('ALTER TABLE posts ADD COLUMN author_avatar_url TEXT;'); } catch(e) {}
     try { await dbRun('ALTER TABLE posts ADD COLUMN account_id INTEGER;'); } catch(e) {}
+    try { await dbRun('ALTER TABLE posts ADD COLUMN workspace_id INTEGER;'); } catch(e) {}
   } catch (err) {
     console.error('Failed to initialize database:', err);
   }
@@ -111,9 +131,84 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'social-media-scheduler', version: '1.0.0' });
 });
 
-app.get('/api/posts', async (req, res) => {
+// Workspace Routes
+app.get('/api/workspaces', async (req, res) => {
   try {
-    const rows = await dbAll('SELECT * FROM posts ORDER BY post_time ASC');
+    const rows = await dbAll('SELECT * FROM workspaces ORDER BY created_at ASC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/workspaces', async (req, res) => {
+  const { name } = req.body;
+  try {
+    const result = await dbRun('INSERT INTO workspaces (name) VALUES (?)', [name || 'New Workspace']);
+    const newWorkspace = await dbGet('SELECT * FROM workspaces WHERE id = ?', [result.lastID]);
+    res.json(newWorkspace);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/workspaces/:id', async (req, res) => {
+  const { name } = req.body;
+  try {
+    await dbRun('UPDATE workspaces SET name = ? WHERE id = ?', [name, req.params.id]);
+    const updated = await dbGet('SELECT * FROM workspaces WHERE id = ?', [req.params.id]);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/workspaces/:id', async (req, res) => {
+  try {
+    await dbRun('DELETE FROM workspaces WHERE id = ?', [req.params.id]);
+    await dbRun('DELETE FROM workspace_accounts WHERE workspace_id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Workspace Accounts Routes
+app.get('/api/workspaces/:id/accounts', async (req, res) => {
+  try {
+    const rows = await dbAll('SELECT account_id FROM workspace_accounts WHERE workspace_id = ?', [req.params.id]);
+    res.json(rows.map(r => r.account_id));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/workspaces/:id/accounts', async (req, res) => {
+  const { accountIds } = req.body; // Array of account_ids to sync
+  if (!Array.isArray(accountIds)) return res.status(400).json({ error: 'accountIds must be an array' });
+  try {
+    await dbRun('DELETE FROM workspace_accounts WHERE workspace_id = ?', [req.params.id]);
+    for (const accountId of accountIds) {
+      await dbRun('INSERT INTO workspace_accounts (workspace_id, account_id) VALUES (?, ?)', [req.params.id, String(accountId)]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/posts', async (req, res) => {
+  const { workspaceId } = req.query;
+  try {
+    let sql = 'SELECT * FROM posts';
+    const params = [];
+    if (workspaceId) {
+      sql += ' WHERE workspace_id = ?';
+      params.push(workspaceId);
+    }
+    sql += ' ORDER BY post_time ASC';
+    const rows = await dbAll(sql, params);
+    
     // Ensure all dates are explicitly treated as UTC by appending 'Z'
     const formattedRows = rows.map(row => ({
       ...row,
@@ -137,12 +232,12 @@ app.post('/api/upload', upload.single('media'), (req, res) => {
 });
 
 app.post('/api/posts', async (req, res) => {
-  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl, accountId } = req.body;
+  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl, accountId, workspaceId } = req.body;
   
   try {
     const result = await dbRun(
-      'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url, status, author_name, author_handle, author_avatar_url, account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [platform, title || null, content || '', JSON.stringify(hashtags || []), mediaUrl || null, postTime, sessionToken, apiBaseUrl, 'scheduled', authorName || null, authorHandle || null, authorAvatarUrl || null, accountId || null]
+      'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url, status, author_name, author_handle, author_avatar_url, account_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [platform, title || null, content || '', JSON.stringify(hashtags || []), mediaUrl || null, postTime, sessionToken, apiBaseUrl, 'scheduled', authorName || null, authorHandle || null, authorAvatarUrl || null, accountId || null, workspaceId || null]
     );
     const newPost = await dbGet('SELECT * FROM posts WHERE id = ?', [result.lastID]);
     newPost.post_time = newPost.post_time ? `${newPost.post_time}Z`.replace(' ', 'T') : newPost.post_time;

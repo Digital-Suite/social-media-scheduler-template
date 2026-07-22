@@ -16,6 +16,7 @@ import {
 import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { useAuth } from '../context/AuthContext';
+import { useWorkspace } from '../context/WorkspaceContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { format, addMinutes } from 'date-fns';
 
@@ -119,9 +120,26 @@ const PostPreview = ({ account, title, caption, hashtags, mediaUrl }) => {
 };
 
 export function CreatePostView() {
-  const { sessionToken, connectedAccounts, apiBaseUrl } = useAuth();
+  const { sessionToken, connectedAccounts: allConnectedAccounts, apiBaseUrl } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [workspaceAccountIds, setWorkspaceAccountIds] = useState([]);
+  
+  useEffect(() => {
+    if (activeWorkspace) {
+      fetch(`/api/workspaces/${activeWorkspace.id}/accounts`)
+        .then(res => res.json())
+        .then(data => setWorkspaceAccountIds(data))
+        .catch(console.error);
+    } else {
+      setWorkspaceAccountIds([]);
+    }
+  }, [activeWorkspace]);
+
+  // Filter accounts to only show those linked to the active workspace
+  const connectedAccounts = allConnectedAccounts.filter(a => workspaceAccountIds.includes(String(a.id)));
 
   const getInitialTime = () => {
     const date = addMinutes(new Date(), 30);
@@ -246,7 +264,8 @@ export function CreatePostView() {
             authorHandle: account.metadata?.handle || account.metadata?.username || null,
             // FIX: Ensure picture is extracted properly
             authorAvatarUrl: account.metadata?.picture || null,
-            accountId: account.id
+            accountId: account.id,
+            workspaceId: activeWorkspace?.id || null
           })
         });
       }

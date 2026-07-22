@@ -1,13 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 
 export function ConnectedAccounts({ platforms }) {
   const { sessionToken, apiBaseUrl, connectedAccounts, setConnectedAccounts } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [isLoading, setIsLoading] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [workspaceAccountIds, setWorkspaceAccountIds] = useState([]);
 
-  // 3. Connect WebSocket for Real-time OAuth updates
+  useEffect(() => {
+    if (activeWorkspace) {
+      fetch(`/api/workspaces/${activeWorkspace.id}/accounts`)
+        .then(res => res.json())
+        .then(data => setWorkspaceAccountIds(data))
+        .catch(console.error);
+    } else {
+      setWorkspaceAccountIds([]);
+    }
+  }, [activeWorkspace]);
+
+  const toggleWorkspaceLink = async (accountId, isLinked) => {
+    if (!activeWorkspace) return;
+    const newIds = isLinked 
+      ? workspaceAccountIds.filter(id => String(id) !== String(accountId))
+      : [...workspaceAccountIds, String(accountId)];
+    
+    setWorkspaceAccountIds(newIds);
+    await fetch(`/api/workspaces/${activeWorkspace.id}/accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountIds: newIds })
+    });
+  };
+
+  // Connect WebSocket for Real-time OAuth updates
   useEffect(() => {
     if (!apiBaseUrl || !sessionToken) return;
 
@@ -16,24 +44,36 @@ export function ConnectedAccounts({ platforms }) {
       transports: ['websocket', 'polling']
     });
 
-    newSocket.on('social:oauth_success', (data) => {
+    newSocket.on('social:oauth_success', async (data) => {
       if (data && data.account) {
         setConnectedAccounts(prev => {
           const exists = prev.find(a => a.id === data.account.id);
-          if (exists) {
-            return prev.map(a => a.id === data.account.id ? data.account : a);
-          }
-          return [...prev, data.account];
+          return exists ? prev.map(a => a.id === data.account.id ? data.account : a) : [...prev, data.account];
         });
+        
+        // Auto-link new accounts to active workspace
+        if (activeWorkspace) {
+          const newAccountId = String(data.account.id);
+          setWorkspaceAccountIds(prev => {
+            if (!prev.includes(newAccountId)) {
+              const newIds = [...prev, newAccountId];
+              fetch(`/api/workspaces/${activeWorkspace.id}/accounts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accountIds: newIds })
+              }).catch(console.error);
+              return newIds;
+            }
+            return prev;
+          });
+        }
       }
     });
 
     setSocket(newSocket);
 
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [apiBaseUrl, sessionToken]);
+    return () => newSocket.disconnect();
+  }, [apiBaseUrl, sessionToken, activeWorkspace]);
 
   const handleConnect = async (providerId) => {
     if (!sessionToken || !apiBaseUrl) return;
@@ -147,29 +187,41 @@ export function ConnectedAccounts({ platforms }) {
               {/* Render connected sub-accounts */}
               {isConnected && (
                 <div className="flex flex-col gap-2 pl-4 border-l-2 border-ds-border ml-6 mt-1">
-                  {providerAccounts.map((account) => (
-                    <div key={account.id} className="flex items-center justify-between bg-ds-background rounded-lg p-3 border border-ds-border">
-                      <div className="flex items-center gap-3">
-                        {account.metadata?.picture ? (
-                          <img src={account.metadata.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-ds-surface flex items-center justify-center">
-                            <platform.icon className={`w-4 h-4 ${platform.iconColor}`} />
+                  {providerAccounts.map((account) => {
+                    const isLinked = workspaceAccountIds.includes(String(account.id));
+                    return (
+                      <div key={account.id} className={`flex items-center justify-between rounded-lg p-3 border transition-colors ${isLinked ? 'bg-ds-surface border-ds-primary/30' : 'bg-ds-background border-ds-border opacity-60'}`}>
+                        <div className="flex items-center gap-3">
+                          {account.metadata?.picture ? (
+                            <img src={account.metadata.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-ds-surface flex items-center justify-center">
+                              <platform.icon className={`w-4 h-4 ${platform.iconColor}`} />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-ds-text">{account.metadata?.username || account.providerAccountId}</p>
+                            {account.metadata?.email && <p className="text-xs text-ds-textMuted">{account.metadata.email}</p>}
                           </div>
-                        )}
-                        <div>
-                          <p className="text-sm font-medium text-ds-text">{account.metadata?.username || account.providerAccountId}</p>
-                          {account.metadata?.email && <p className="text-xs text-ds-textMuted">{account.metadata.email}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleWorkspaceLink(account.id, isLinked)}
+                            className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${isLinked ? 'bg-ds-primary/10 text-ds-primary hover:bg-ds-primary/20' : 'bg-ds-surface text-ds-textMuted hover:text-ds-text'}`}
+                          >
+                            {isLinked ? '✓ Workspace' : '+ Workspace'}
+                          </button>
+                          <button
+                            onClick={() => handleDisconnect(account.id)}
+                            className="text-xs text-red-400 hover:text-red-500 hover:bg-red-500/10 px-2 py-1.5 rounded-md transition-colors"
+                            title="Disconnect from OS"
+                          >
+                            Disconnect
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDisconnect(account.id)}
-                        className="text-xs text-red-400 hover:text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-md transition-colors"
-                      >
-                        Disconnect
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useWorkspace } from '../context/WorkspaceContext';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -93,6 +94,7 @@ export function CalendarView() {
   const navigate = useNavigate();
   const { timezone, timeFormat } = useSettings();
   const { sessionToken, apiBaseUrl } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hoveredPost, setHoveredPost] = useState(null);
   const [selectedPosts, setSelectedPosts] = useState(null);
@@ -114,7 +116,8 @@ export function CalendarView() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch('/api/posts');
+        const url = activeWorkspace ? `/api/posts?workspaceId=${activeWorkspace.id}` : '/api/posts';
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           // Normalize post keys to match the frontend expectations
@@ -189,7 +192,7 @@ export function CalendarView() {
           if (osSocket) osSocket.disconnect();
         };
       }).catch(err => console.error('Failed to load socket.io-client', err));
-  }, [timezone]); // Re-fetch occasionally
+  }, [timezone, timeFormat, activeWorkspace]); // Re-fetch occasionally
 
   const handleDeletePost = async (id) => {
     try {
