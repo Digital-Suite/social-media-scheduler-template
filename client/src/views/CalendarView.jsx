@@ -142,20 +142,10 @@ export function CalendarView() {
     };
     fetchPosts();
 
-      // Socket.io connection
+      // Socket.io connection (Local for post updates)
       import('socket.io-client').then(({ io }) => {
         const socket = io(); // Connects to the same host
         
-        socket.on('connect', () => {
-          if (apiBaseUrl && sessionToken) {
-            socket.emit('register_session', { apiBaseUrl, sessionToken });
-          }
-        });
-
-        socket.on('update_available', (data) => {
-          setUpdateAvailable(data.version);
-        });
-
         socket.on('post_updated', (updatedPost) => {
           setRealPosts(prev => {
             const index = prev.findIndex(p => p.id === updatedPost.id);
@@ -183,7 +173,21 @@ export function CalendarView() {
           });
         });
 
-        return () => socket.disconnect();
+        // Socket.io connection (OS Backend for app updates)
+        let osSocket;
+        if (apiBaseUrl) {
+          osSocket = io(apiBaseUrl);
+          osSocket.on('app_catalog_updated', (data) => {
+            if (data.appName === 'Social Media Scheduler') {
+              setUpdateAvailable(data.version);
+            }
+          });
+        }
+
+        return () => {
+          socket.disconnect();
+          if (osSocket) osSocket.disconnect();
+        };
       }).catch(err => console.error('Failed to load socket.io-client', err));
   }, [timezone]); // Re-fetch occasionally
 
