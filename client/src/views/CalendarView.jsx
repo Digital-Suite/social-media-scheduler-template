@@ -126,7 +126,7 @@ export function CalendarView() {
             mediaUrl: p.media_url,
             status: p.status,
             authorName: p.author_name || 'User',
-            authorHandle: p.author_handle ? (p.author_handle.startsWith('@') ? p.author_handle : `@${p.author_handle}`) : '@user',
+            authorHandle: p.author_handle ? (p.author_handle.startsWith('@') ? p.author_handle : `@${p.author_handle}`) : (p.author_name ? `@${p.author_name.replace(/\s+/g, '').toLowerCase()}` : '@user'),
             authorAvatarUrl: p.author_avatar_url,
             content: p.content,
             stats: { comments: 0, retweets: 0, likes: '0', views: '0' }

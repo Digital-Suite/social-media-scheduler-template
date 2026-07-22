@@ -22,9 +22,15 @@ import { useSettings } from '../context/SettingsContext';
 export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
   const { timezone } = useSettings();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTime, setEditTime] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (isOpen) setActiveIndex(0);
+    if (isOpen) {
+      setActiveIndex(0);
+      setIsEditing(false);
+    }
   }, [isOpen]);
 
   if (!posts || posts.length === 0) return null;
@@ -52,6 +58,32 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
   };
 
   const isVideo = post.mediaUrl && (post.mediaUrl.endsWith('.mp4') || post.mediaUrl.endsWith('.mov') || post.mediaUrl.endsWith('.webm'));
+
+  const handleSaveTime = async () => {
+    if (!editTime) return;
+    setIsSaving(true);
+    try {
+      const localDate = new Date(editTime);
+      const utcPostTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
+      const res = await fetch(`/api/posts/${post.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postTime: utcPostTime })
+      });
+      if (res.ok) {
+        setIsEditing(false);
+        // Force refresh by closing modal or user refresh. For a quick fix, just alert
+        alert("Time updated successfully! Refresh the calendar to see the changes.");
+        onClose();
+      } else {
+        alert("Failed to update time");
+      }
+    } catch (e) {
+      alert("Network error updating time");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -137,10 +169,43 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
               {/* Timestamps */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm font-semibold text-ds-textMuted mb-1">Scheduled For</div>
-                  <div className="text-sm font-bold text-ds-text">
-                    {post.postTime ? formatInTimeZone(new Date(post.postTime), timezone.value, 'MMM dd, yyyy, hh:mm a') : 'N/A'}
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="text-sm font-semibold text-ds-textMuted">Scheduled For</div>
+                    {post.status !== 'published' && !isEditing && (
+                      <button 
+                        onClick={() => {
+                          const dateObj = post.postTime ? new Date(post.postTime) : new Date();
+                          setEditTime(format(dateObj, "yyyy-MM-dd'T'HH:mm"));
+                          setIsEditing(true);
+                        }}
+                        className="text-xs text-ds-primary hover:underline font-medium"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
+                  {isEditing ? (
+                    <div className="flex flex-col gap-2">
+                      <input 
+                        type="datetime-local" 
+                        value={editTime}
+                        onChange={(e) => setEditTime(e.target.value)}
+                        className="bg-ds-surface border border-ds-border text-ds-text rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ds-primary w-full"
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={handleSaveTime} disabled={isSaving} className="text-xs bg-ds-primary text-ds-background font-bold px-3 py-1.5 rounded-md hover:bg-ds-primaryHover">
+                          {isSaving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button onClick={() => setIsEditing(false)} className="text-xs bg-ds-surface border border-ds-border text-ds-text px-3 py-1.5 rounded-md hover:bg-ds-background">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm font-bold text-ds-text">
+                      {post.postTime ? formatInTimeZone(new Date(post.postTime), timezone.value, 'MMM dd, yyyy, hh:mm a') : 'N/A'}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-ds-textMuted mb-1">Published At</div>

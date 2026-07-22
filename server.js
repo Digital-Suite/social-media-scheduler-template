@@ -165,6 +165,19 @@ app.delete('/api/posts/:id', async (req, res) => {
   }
 });
 
+app.put('/api/posts/:id', async (req, res) => {
+  const { postTime } = req.body;
+  try {
+    await dbRun("UPDATE posts SET post_time = ?, status = 'scheduled' WHERE id = ?", [postTime, req.params.id]);
+    const updatedPost = await dbGet('SELECT * FROM posts WHERE id = ?', [req.params.id]);
+    updatedPost.post_time = updatedPost.post_time ? `${updatedPost.post_time}Z`.replace(' ', 'T') : updatedPost.post_time;
+    updatedPost.created_at = updatedPost.created_at ? `${updatedPost.created_at}Z`.replace(' ', 'T') : updatedPost.created_at;
+    res.json(updatedPost);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // Cron Job for publishing posts
 cron.schedule('* * * * *', async () => {
