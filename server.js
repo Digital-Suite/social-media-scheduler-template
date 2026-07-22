@@ -4,7 +4,8 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { Pool } = require('pg');
+const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 const cron = require('node-cron');
 
 const app = express();
@@ -15,30 +16,54 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'client/dist')));
 
+// Ensure data directory exists
+const dataDir = process.env.NODE_ENV === 'production' ? '/app/data' : path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
 // Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+const dbPath = path.join(dataDir, 'database.sqlite');
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) console.error('Error opening database:', err);
+});
+
+// Helper for promise-based queries
+const dbRun = (sql, params = []) => new Promise((resolve, reject) => {
+  db.run(sql, params, function (err) {
+    if (err) reject(err);
+    else resolve(this);
+  });
+});
+
+const dbAll = (sql, params = []) => new Promise((resolve, reject) => {
+  db.all(sql, params, (err, rows) => {
+    if (err) reject(err);
+    else resolve(rows);
+  });
+});
+
+const dbGet = (sql, params = []) => new Promise((resolve, reject) => {
+  db.get(sql, params, (err, row) => {
+    if (err) reject(err);
+    else resolve(row);
+  });
 });
 
 // Initialize database
 async function initDb() {
   try {
-    if (!process.env.DATABASE_URL) {
-      console.warn('DATABASE_URL is not set! Skipping DB init.');
-      return;
-    }
-    await pool.query(`
+    await dbRun(`
       CREATE TABLE IF NOT EXISTS posts (
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         platform VARCHAR(50) NOT NULL,
         content TEXT NOT NULL,
         media_url TEXT,
-        post_time TIMESTAMP NOT NULL,
+        post_time DATETIME NOT NULL,
         status VARCHAR(20) DEFAULT 'scheduled',
         session_token TEXT,
         api_base_url TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('Database initialized successfully.');
@@ -54,24 +79,23 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/api/posts', async (req, res) => {
-  if (!process.env.DATABASE_URL) return res.json([]);
   try {
-    const result = await pool.query('SELECT * FROM posts ORDER BY post_time ASC');
-    res.json(result.rows);
+    const rows = await dbAll('SELECT * FROM posts ORDER BY post_time ASC');
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/posts', async (req, res) => {
-  if (!process.env.DATABASE_URL) return res.status(500).json({ error: 'Database not configured' });
   const { platform, content, mediaUrl, postTime, sessionToken, apiBaseUrl } = req.body;
   try {
-    const result = await pool.query(
-      'INSERT INTO posts (platform, content, media_url, post_time, session_token, api_base_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+    const result = await dbRun(
+      'INSERT INTO posts (platform, content, media_url, post_time, session_token, api_base_url) VALUES (?, ?, ?, ?, ?, ?)',
       [platform, content, mediaUrl, postTime, sessionToken, apiBaseUrl]
     );
-    res.json(result.rows[0]);
+    const newPost = await dbGet('SELECT * FROM posts WHERE id = ?', [result.lastID]);
+    res.json(newPost);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -79,15 +103,14 @@ app.post('/api/posts', async (req, res) => {
 
 // Cron Job for publishing posts
 cron.schedule('* * * * *', async () => {
-  if (!process.env.DATABASE_URL) return;
   console.log('Checking for scheduled posts...');
   try {
-    const result = await pool.query("SELECT * FROM posts WHERE status = 'scheduled' AND post_time <= NOW()");
-    for (const post of result.rows) {
+    const rows = await dbAll("SELECT * FROM posts WHERE status = 'scheduled' AND post_time <= datetime('now')");
+    for (const post of rows) {
       console.log(`Publishing post ${post.id} to ${post.platform}...`);
       if (!post.session_token || !post.api_base_url) {
         console.error(`Post ${post.id} missing session token or API base URL. Marking as failed.`);
-        await pool.query("UPDATE posts SET status = 'failed' WHERE id = $1", [post.id]);
+        await dbRun("UPDATE posts SET status = 'failed' WHERE id = ?", [post.id]);
         continue;
       }
 
@@ -108,10 +131,10 @@ cron.schedule('* * * * *', async () => {
         const data = await response.json();
         if (response.ok && data.success) {
           console.log(`Successfully published post ${post.id}!`);
-          await pool.query("UPDATE posts SET status = 'published' WHERE id = $1", [post.id]);
+          await dbRun("UPDATE posts SET status = 'published' WHERE id = ?", [post.id]);
         } else {
           console.error(`Failed to publish post ${post.id}:`, data);
-          await pool.query("UPDATE posts SET status = 'failed' WHERE id = $1", [post.id]);
+          await dbRun("UPDATE posts SET status = 'failed' WHERE id = ?", [post.id]);
         }
       } catch (err) {
         console.error(`Network error publishing post ${post.id}:`, err);
