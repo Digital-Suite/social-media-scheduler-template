@@ -63,17 +63,17 @@ export function ConnectedAccounts({ platforms }) {
     }
   };
 
-  const handleDisconnect = async (providerId) => {
+  const handleDisconnect = async (accountId) => {
     if (!sessionToken || !apiBaseUrl) return;
     
     try {
-      const res = await fetch(`${apiBaseUrl}/api/v1/accounts/disconnect/${providerId}`, {
+      const res = await fetch(`${apiBaseUrl}/api/v1/accounts/disconnect/${accountId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${sessionToken}` }
       });
       if (res.ok) {
         // Remove from local state
-        setConnectedAccounts(prev => prev.filter(a => a.provider.toLowerCase() !== providerId.toLowerCase()));
+        setConnectedAccounts(prev => prev.filter(a => a.id !== accountId));
       }
     } catch (err) {
       console.error('Failed to disconnect account', err);
@@ -99,50 +99,79 @@ export function ConnectedAccounts({ platforms }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {platforms.map((platform) => {
-          // Check if this provider is found in connectedAccounts
-          const accountData = connectedAccounts.find(a => a.provider.toLowerCase() === platform.id.toLowerCase());
-          const isConnected = !!accountData;
-          const isExpired = accountData?.isExpired;
+          // Find all connected accounts for this platform
+          const providerAccounts = connectedAccounts.filter(a => a.provider.toLowerCase() === platform.id.toLowerCase());
+          const isConnected = providerAccounts.length > 0;
+          // If any account is expired, we flag the whole provider as having an issue
+          const hasExpired = providerAccounts.some(a => a.isExpired);
 
           return (
-            <div
-              key={platform.id}
-              className={`bg-ds-surface border rounded-xl p-5 flex items-center justify-between transition-all duration-200 ${
-                isConnected && !isExpired ? 'border-ds-primary/40 shadow-lg shadow-ds-primary/5' : 
-                isExpired ? 'border-orange-500/40 shadow-lg shadow-orange-500/5' : 'border-ds-border hover:border-ds-border/80'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-11 h-11 rounded-xl ${platform.bgColor} flex items-center justify-center shrink-0 shadow-md`}>
-                  <platform.icon className={`w-5 h-5 ${platform.iconColor}`} />
-                </div>
-                <div>
-                  <p className="font-semibold text-ds-text text-sm">{platform.name}</p>
-                  {isConnected && !isExpired ? (
-                    <p className="text-ds-textMuted text-xs mt-0.5 text-green-500 font-medium">✓ Securely Linked</p>
-                  ) : isExpired ? (
-                    <p className="text-ds-textMuted text-xs mt-0.5 text-orange-400 font-medium">⚠️ Token Expired</p>
-                  ) : (
-                    <p className="text-ds-textMuted text-xs mt-0.5">{platform.description}</p>
-                  )}
-                </div>
-              </div>
-
-              <button
-                disabled={platform.disabled && !isConnected}
-                onClick={() => isExpired || !isConnected ? handleConnect(platform.id) : handleDisconnect(platform.id)}
-                className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  isConnected && !isExpired
-                    ? 'bg-ds-surface border border-ds-border text-ds-textMuted hover:bg-ds-background hover:text-red-400 hover:border-red-500/30'
-                    : isExpired
-                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-500/20'
-                    : platform.disabled
-                    ? 'bg-ds-surface border border-ds-border text-ds-textMuted opacity-50 cursor-not-allowed'
-                    : 'bg-ds-primary hover:bg-ds-primaryHover text-ds-background shadow-sm shadow-ds-primary/20'
+            <div key={platform.id} className="flex flex-col gap-2">
+              <div
+                className={`bg-ds-surface border rounded-xl p-5 flex items-center justify-between transition-all duration-200 ${
+                  isConnected && !hasExpired ? 'border-ds-primary/40 shadow-lg shadow-ds-primary/5' : 
+                  hasExpired ? 'border-orange-500/40 shadow-lg shadow-orange-500/5' : 'border-ds-border hover:border-ds-border/80'
                 }`}
               >
-                {isConnected && !isExpired ? 'Disconnect' : isExpired ? 'Reconnect' : platform.disabled ? 'Unavailable' : '+ Connect'}
-              </button>
+                <div className="flex items-center gap-4">
+                  <div className={`w-11 h-11 rounded-xl ${platform.bgColor} flex items-center justify-center shrink-0 shadow-md`}>
+                    <platform.icon className={`w-5 h-5 ${platform.iconColor}`} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-ds-text text-sm">{platform.name}</p>
+                    {isConnected && !hasExpired ? (
+                      <p className="text-ds-textMuted text-xs mt-0.5 text-green-500 font-medium">✓ Securely Linked</p>
+                    ) : hasExpired ? (
+                      <p className="text-ds-textMuted text-xs mt-0.5 text-orange-400 font-medium">⚠️ Token Expired</p>
+                    ) : (
+                      <p className="text-ds-textMuted text-xs mt-0.5">{platform.description}</p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  disabled={platform.disabled}
+                  onClick={() => handleConnect(platform.id)}
+                  className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    isConnected
+                      ? 'bg-ds-surface border border-ds-border text-ds-text hover:bg-ds-primary hover:border-ds-primary hover:text-ds-background'
+                      : platform.disabled
+                      ? 'bg-ds-surface border border-ds-border text-ds-textMuted opacity-50 cursor-not-allowed'
+                      : 'bg-ds-primary hover:bg-ds-primaryHover text-ds-background shadow-sm shadow-ds-primary/20'
+                  }`}
+                >
+                  {isConnected ? '+ Add Another' : platform.disabled ? 'Unavailable' : '+ Connect'}
+                </button>
+              </div>
+
+              {/* Render connected sub-accounts */}
+              {isConnected && (
+                <div className="flex flex-col gap-2 pl-4 border-l-2 border-ds-border ml-6 mt-1">
+                  {providerAccounts.map((account) => (
+                    <div key={account.id} className="flex items-center justify-between bg-ds-background rounded-lg p-3 border border-ds-border">
+                      <div className="flex items-center gap-3">
+                        {account.metadata?.picture ? (
+                          <img src={account.metadata.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-ds-surface flex items-center justify-center">
+                            <platform.icon className={`w-4 h-4 ${platform.iconColor}`} />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-ds-text">{account.metadata?.username || account.providerAccountId}</p>
+                          {account.metadata?.email && <p className="text-xs text-ds-textMuted">{account.metadata.email}</p>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDisconnect(account.id)}
+                        className="text-xs text-red-400 hover:text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-md transition-colors"
+                      >
+                        Disconnect
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
