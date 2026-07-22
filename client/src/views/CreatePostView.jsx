@@ -125,6 +125,9 @@ export function CreatePostView() {
         const postTitle = useSameCaption ? title : (platformTitles[accountId] || title);
         const postCaption = useSameCaption ? caption : (platformCaptions[accountId] || caption);
         
+        const localDate = new Date(postTime);
+        const utcPostTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
+
         await fetch('/api/posts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -134,9 +137,12 @@ export function CreatePostView() {
             content: postCaption,
             hashtags: hashtags.length > 0 ? hashtags : undefined,
             mediaUrl: mediaUrl,
-            postTime: postTime,
+            postTime: utcPostTime,
             sessionToken: sessionToken,
-            apiBaseUrl: apiBaseUrl
+            apiBaseUrl: apiBaseUrl,
+            authorName: account.metadata?.name || null,
+            authorHandle: account.metadata?.handle || null,
+            authorAvatarUrl: account.metadata?.avatar_url || null
           })
         });
       }
@@ -294,7 +300,7 @@ export function CreatePostView() {
                     </div>
                     <div className="relative">
                       <div className="w-8 h-8 rounded-full bg-ds-surface border border-ds-border flex items-center justify-center overflow-hidden">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${acc.metadata?.username || acc.provider}`} alt="" className="w-full h-full object-cover" />
+                        <img src={acc.metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${acc.metadata?.username || acc.provider}`} alt="" className="w-full h-full object-cover" />
                       </div>
                       <div className="absolute -bottom-1 -right-1 ring-2 ring-ds-background rounded-full">
                         <PlatformIcon platform={acc.provider} />

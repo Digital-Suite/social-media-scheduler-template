@@ -16,8 +16,11 @@ import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { useSettings } from '../context/SettingsContext';
 
 export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
+  const { timezone } = useSettings();
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -136,13 +139,13 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
                 <div>
                   <div className="text-sm font-semibold text-ds-textMuted mb-1">Scheduled For</div>
                   <div className="text-sm font-bold text-ds-text">
-                    {post.postTime ? format(new Date(post.postTime), 'MMM dd, yyyy, hh:mm a') : 'N/A'}
+                    {post.postTime ? formatInTimeZone(new Date(post.postTime), timezone.value, 'MMM dd, yyyy, hh:mm a') : 'N/A'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-ds-textMuted mb-1">Published At</div>
                   <div className="text-sm font-bold text-ds-text">
-                    {post.status === 'published' && post.postTime ? format(new Date(post.postTime), 'MMM dd, yyyy, hh:mm a') : 'Pending'}
+                    {post.status === 'published' && post.postTime ? formatInTimeZone(new Date(post.postTime), timezone.value, 'MMM dd, yyyy, hh:mm a') : 'Pending'}
                   </div>
                 </div>
               </div>
@@ -212,7 +215,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
                       
                       <div className="text-xs text-ds-textMuted flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" /> 
-                        {post.createdAt ? format(new Date(post.createdAt), 'MM/dd/yyyy, hh:mm:ss a') : (post.postTime ? format(new Date(post.postTime), 'MM/dd/yyyy, hh:mm:ss a') : 'N/A')}
+                        {post.createdAt ? formatInTimeZone(new Date(post.createdAt), timezone.value, 'MM/dd/yyyy, hh:mm:ss a') : (post.postTime ? formatInTimeZone(new Date(post.postTime), timezone.value, 'MM/dd/yyyy, hh:mm:ss a') : 'N/A')}
                       </div>
                     </div>
                   </div>
@@ -232,8 +235,8 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
                 {/* Footer */}
                 <div className="bg-ds-background border-t border-ds-border p-4 shrink-0">
                   <div className="flex items-center justify-between text-xs text-ds-textMuted">
-                    <span>Created {post.createdAt ? format(new Date(post.createdAt), 'MMM dd, yyyy, hh:mm a') : 'N/A'}</span>
-                    <span>Updated {post.postTime ? format(new Date(post.postTime), 'MMM dd, yyyy, hh:mm a') : 'N/A'}</span>
+                    <span>Created {post.createdAt ? formatInTimeZone(new Date(post.createdAt), timezone.value, 'MMM dd, yyyy, hh:mm a') : 'N/A'}</span>
+                    <span>Updated {post.postTime ? formatInTimeZone(new Date(post.postTime), timezone.value, 'MMM dd, yyyy, hh:mm a') : 'N/A'}</span>
                   </div>
                 </div>
               </div>

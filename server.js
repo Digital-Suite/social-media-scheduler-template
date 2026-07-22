@@ -72,6 +72,9 @@ async function initDb() {
         status VARCHAR(20) DEFAULT 'scheduled',
         session_token TEXT,
         api_base_url TEXT,
+        author_name TEXT,
+        author_handle TEXT,
+        author_avatar_url TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -80,6 +83,9 @@ async function initDb() {
     // Migration for existing tables
     try { await dbRun('ALTER TABLE posts ADD COLUMN title TEXT;'); } catch(e) {}
     try { await dbRun('ALTER TABLE posts ADD COLUMN hashtags TEXT;'); } catch(e) {}
+    try { await dbRun('ALTER TABLE posts ADD COLUMN author_name TEXT;'); } catch(e) {}
+    try { await dbRun('ALTER TABLE posts ADD COLUMN author_handle TEXT;'); } catch(e) {}
+    try { await dbRun('ALTER TABLE posts ADD COLUMN author_avatar_url TEXT;'); } catch(e) {}
   } catch (err) {
     console.error('Failed to initialize database:', err);
   }
@@ -107,7 +113,13 @@ app.get('/api/health', (req, res) => {
 app.get('/api/posts', async (req, res) => {
   try {
     const rows = await dbAll('SELECT * FROM posts ORDER BY post_time ASC');
-    res.json(rows);
+    // Ensure all dates are explicitly treated as UTC by appending 'Z'
+    const formattedRows = rows.map(row => ({
+      ...row,
+      post_time: row.post_time ? (row.post_time.endsWith('Z') ? row.post_time : `${row.post_time}Z`.replace(' ', 'T')) : row.post_time,
+      created_at: row.created_at ? (row.created_at.endsWith('Z') ? row.created_at : `${row.created_at}Z`.replace(' ', 'T')) : row.created_at
+    }));
+    res.json(formattedRows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -124,7 +136,7 @@ app.post('/api/upload', upload.single('media'), (req, res) => {
 });
 
 app.post('/api/posts', async (req, res) => {
-  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl } = req.body;
+  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl } = req.body;
   
   // ensure content isn't strictly null to pass constraint if it's purely media
   const safeContent = content || '';
@@ -132,10 +144,12 @@ app.post('/api/posts', async (req, res) => {
 
   try {
     const result = await dbRun(
-      'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [platform, title || null, safeContent, tagsStr, mediaUrl || null, postTime, sessionToken, apiBaseUrl]
+      'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url, author_name, author_handle, author_avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [platform, title || null, safeContent, tagsStr, mediaUrl || null, postTime, sessionToken, apiBaseUrl, authorName || null, authorHandle || null, authorAvatarUrl || null]
     );
     const newPost = await dbGet('SELECT * FROM posts WHERE id = ?', [result.lastID]);
+    newPost.post_time = newPost.post_time ? `${newPost.post_time}Z`.replace(' ', 'T') : newPost.post_time;
+    newPost.created_at = newPost.created_at ? `${newPost.created_at}Z`.replace(' ', 'T') : newPost.created_at;
     res.json(newPost);
   } catch (err) {
     res.status(500).json({ error: err.message });

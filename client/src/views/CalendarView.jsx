@@ -42,6 +42,7 @@ import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
 import { PostDetailsModal } from '../components/PostDetailsModal';
 import { useSettings } from '../context/SettingsContext';
+import { formatInTimeZone } from 'date-fns-tz';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -117,15 +118,16 @@ export function CalendarView() {
           const formattedPosts = data.map(p => ({
             id: p.id,
             platform: p.platform,
-            time: format(new Date(p.post_time), 'HH:mm'),
-            date: format(new Date(p.post_time), 'yyyy-MM-dd'),
+            time: formatInTimeZone(new Date(p.post_time), timezone.value, 'HH:mm'),
+            date: formatInTimeZone(new Date(p.post_time), timezone.value, 'yyyy-MM-dd'),
             fullDate: new Date(p.post_time),
             postTime: p.post_time,
             createdAt: p.created_at,
             mediaUrl: p.media_url,
             status: p.status,
-            authorName: 'DigitalSuite User',
-            authorHandle: '@user',
+            authorName: p.author_name || 'User',
+            authorHandle: p.author_handle ? (p.author_handle.startsWith('@') ? p.author_handle : `@${p.author_handle}`) : '@user',
+            authorAvatarUrl: p.author_avatar_url,
             content: p.content,
             stats: { comments: 0, retweets: 0, likes: '0', views: '0' }
           }));
@@ -512,7 +514,7 @@ export function CalendarView() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-full bg-ds-surface border border-ds-border overflow-hidden">
-                          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${post.authorName}`} alt="" className="w-full h-full object-cover" />
+                          <img src={post.authorAvatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.authorName}`} alt="" className="w-full h-full object-cover" />
                         </div>
                         <span className="text-xs font-bold text-ds-text">{post.authorName}</span>
                       </div>
