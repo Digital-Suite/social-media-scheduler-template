@@ -27,17 +27,18 @@ export function WorkspaceSelectionView() {
   }
 
   return (
-    <div className="h-screen w-full bg-ds-background flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="h-screen w-full bg-ds-background relative overflow-y-auto custom-scrollbar">
       {/* Background gradients for premium feel */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-ds-primary/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-ds-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="z-10 text-center mb-12 max-w-2xl px-6">
-        <h1 className="text-4xl md:text-5xl font-bold text-ds-text mb-4 tracking-tight">Select your Workspace</h1>
-        <p className="text-ds-textMuted text-lg">Choose a workspace to manage its connected accounts, scheduled posts, and calendar events.</p>
-      </div>
+      <div className="min-h-full flex flex-col items-center justify-center py-24">
+        <div className="z-10 text-center mb-12 max-w-2xl px-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-ds-text mb-4 tracking-tight">Select your Workspace</h1>
+          <p className="text-ds-textMuted text-lg">Choose a workspace to manage its connected accounts, scheduled posts, and calendar events.</p>
+        </div>
 
-      <div className="z-10 w-full max-w-5xl px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="z-10 w-full max-w-5xl px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {/* Existing Workspaces */}
         {workspaces.map(ws => (
@@ -103,7 +104,7 @@ export function WorkspaceSelectionView() {
             </form>
           )}
         </div>
-        
+        </div>
       </div>
     </div>
   );
