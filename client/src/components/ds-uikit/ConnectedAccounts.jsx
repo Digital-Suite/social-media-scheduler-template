@@ -104,19 +104,19 @@ export function ConnectedAccounts({ platforms }) {
   };
 
   const handleDisconnect = async (accountId) => {
-    if (!sessionToken || !apiBaseUrl) return;
+    if (!activeWorkspace) return;
     
     try {
-      const res = await fetch(`${apiBaseUrl}/api/v1/accounts/disconnect/${accountId}`, {
+      const newIds = workspaceAccountIds.filter(id => String(id) !== String(accountId));
+      setWorkspaceAccountIds(newIds);
+      
+      await fetch(`/api/workspaces/${activeWorkspace.id}/accounts`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${sessionToken}` }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountIds: newIds })
       });
-      if (res.ok) {
-        // Remove from local state
-        setConnectedAccounts(prev => prev.filter(a => a.id !== accountId));
-      }
     } catch (err) {
-      console.error('Failed to disconnect account', err);
+      console.error('Failed to unlink account from workspace', err);
     }
   };
 
@@ -209,7 +209,7 @@ export function ConnectedAccounts({ platforms }) {
                             <button
                               onClick={() => handleDisconnect(account.id)}
                               className="text-xs text-red-400 hover:text-red-500 hover:bg-red-500/10 px-2 py-1.5 rounded-md transition-colors"
-                              title="Disconnect from OS"
+                              title="Disconnect from Workspace"
                             >
                               Disconnect
                             </button>
