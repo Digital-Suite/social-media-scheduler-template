@@ -15,8 +15,8 @@ const APP_NAVIGATION = [
 ];
 
 export function AppShell() {
-  const { isEmbedded } = useDigitalSuite(APP_NAVIGATION);
   const { activeWorkspace, loading } = useWorkspace();
+  const { isEmbedded } = useDigitalSuite(activeWorkspace ? APP_NAVIGATION : []);
 
   if (loading) {
     return null; // Or a loading spinner, but handled mainly by internal states if needed. 
