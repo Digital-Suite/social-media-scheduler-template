@@ -187,40 +187,35 @@ export function ConnectedAccounts({ platforms }) {
               {/* Render connected sub-accounts */}
               {isConnected && (
                 <div className="flex flex-col gap-2 pl-4 border-l-2 border-ds-border ml-6 mt-1">
-                  {providerAccounts.map((account) => {
-                    const isLinked = workspaceAccountIds.includes(String(account.id));
-                    return (
-                      <div key={account.id} className={`flex items-center justify-between rounded-lg p-3 border transition-colors ${isLinked ? 'bg-ds-surface border-ds-primary/30' : 'bg-ds-background border-ds-border opacity-60'}`}>
-                        <div className="flex items-center gap-3">
-                          {account.metadata?.picture ? (
-                            <img src={account.metadata.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-ds-surface flex items-center justify-center">
-                              <platform.icon className={`w-4 h-4 ${platform.iconColor}`} />
+                  {providerAccounts
+                    .filter(account => workspaceAccountIds.includes(String(account.id)))
+                    .map((account) => {
+                      return (
+                        <div key={account.id} className="flex items-center justify-between rounded-lg p-3 bg-ds-surface border border-ds-primary/30 transition-colors">
+                          <div className="flex items-center gap-3">
+                            {account.metadata?.picture ? (
+                              <img src={account.metadata.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-ds-background flex items-center justify-center">
+                                <platform.icon className={`w-4 h-4 ${platform.iconColor}`} />
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-sm font-medium text-ds-text">{account.metadata?.username || account.providerAccountId}</p>
+                              {account.metadata?.email && <p className="text-xs text-ds-textMuted">{account.metadata.email}</p>}
                             </div>
-                          )}
-                          <div>
-                            <p className="text-sm font-medium text-ds-text">{account.metadata?.username || account.providerAccountId}</p>
-                            {account.metadata?.email && <p className="text-xs text-ds-textMuted">{account.metadata.email}</p>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleDisconnect(account.id)}
+                              className="text-xs text-red-400 hover:text-red-500 hover:bg-red-500/10 px-2 py-1.5 rounded-md transition-colors"
+                              title="Disconnect from OS"
+                            >
+                              Disconnect
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => toggleWorkspaceLink(account.id, isLinked)}
-                            className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${isLinked ? 'bg-ds-primary/10 text-ds-primary hover:bg-ds-primary/20' : 'bg-ds-surface text-ds-textMuted hover:text-ds-text'}`}
-                          >
-                            {isLinked ? '✓ Workspace' : '+ Workspace'}
-                          </button>
-                          <button
-                            onClick={() => handleDisconnect(account.id)}
-                            className="text-xs text-red-400 hover:text-red-500 hover:bg-red-500/10 px-2 py-1.5 rounded-md transition-colors"
-                            title="Disconnect from OS"
-                          >
-                            Disconnect
-                          </button>
-                        </div>
-                      </div>
-                    );
+                      );
                   })}
                 </div>
               )}

@@ -13,21 +13,7 @@ export function WorkspaceProvider({ children }) {
       if (res.ok) {
         const data = await res.json();
         setWorkspaces(data);
-        if (data.length > 0 && !activeWorkspace) {
-          setActiveWorkspace(data[0]);
-        } else if (data.length === 0) {
-          // Auto-create default workspace if none exist
-          const createRes = await fetch('/api/workspaces', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'Default Workspace' })
-          });
-          if (createRes.ok) {
-            const newWs = await createRes.json();
-            setWorkspaces([newWs]);
-            setActiveWorkspace(newWs);
-          }
-        }
+        // We no longer auto-select or auto-create a default workspace
       }
     } catch (err) {
       console.error('Failed to fetch workspaces', err);
