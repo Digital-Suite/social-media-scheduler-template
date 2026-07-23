@@ -39,7 +39,7 @@ export function WorkspaceSwitcher() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-6 mt-2 w-64 bg-ds-surface border border-ds-border rounded-xl shadow-2xl z-50 overflow-hidden">
+          <div className="absolute top-full left-6 mt-2 w-72 bg-ds-surface border border-ds-border rounded-xl shadow-2xl z-50 overflow-hidden">
             <div className="max-h-64 overflow-y-auto py-2 custom-scrollbar">
               {workspaces.map(ws => (
                 <button
@@ -63,10 +63,10 @@ export function WorkspaceSwitcher() {
                     value={newWorkspaceName}
                     onChange={(e) => setNewWorkspaceName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                    className="flex-1 bg-ds-background border border-ds-border rounded text-sm px-2 py-1 text-ds-text focus:outline-none focus:border-ds-primary"
+                    className="flex-1 min-w-0 bg-ds-background border border-ds-border rounded text-sm px-2 py-1 text-ds-text focus:outline-none focus:border-ds-primary"
                   />
-                  <button onClick={handleCreate} className="text-xs font-bold text-ds-primary hover:text-ds-primaryHover">Add</button>
-                  <button onClick={() => setIsCreating(false)} className="text-xs text-ds-textMuted hover:text-ds-text">Cancel</button>
+                  <button onClick={handleCreate} className="text-xs font-bold text-ds-primary hover:text-ds-primaryHover shrink-0">Add</button>
+                  <button onClick={() => setIsCreating(false)} className="text-xs text-ds-textMuted hover:text-ds-text shrink-0">Cancel</button>
                 </div>
               ) : (
                 <button 
