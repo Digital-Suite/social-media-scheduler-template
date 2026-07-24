@@ -460,20 +460,33 @@ export function CalendarView() {
               {/* Weekly Time Grid */}
               <div className="flex-1 overflow-y-auto relative">
                 
-                {/* Current Time Indicator (Mocked at 10:36 for testing like screenshot) */}
-                <div className="absolute left-20 right-0 z-10 pointer-events-none" style={{ top: `${(10.6 - 8) * 96}px` }}>
-                  <div className="h-px bg-blue-500 relative flex items-center">
-                    <div className="absolute right-0 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">10:36</div>
-                  </div>
-                </div>
+                {/* Current Time Indicator */}
+                {(() => {
+                  const nowStr = formatInTimeZone(new Date(), timezone.value, 'HH:mm');
+                  const [h, m] = nowStr.split(':').map(Number);
+                  const isVisible = h >= 8 && h <= 23;
+                  if (!isVisible) return null;
+                  
+                  return (
+                    <div className="absolute left-20 right-0 z-10 pointer-events-none" style={{ top: `${(h + (m / 60) - 8) * 96}px` }}>
+                      <div className="h-px bg-blue-500 relative flex items-center">
+                        <div className="absolute right-0 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                          {formatInTimeZone(new Date(), timezone.value, timeFormat === '12h' ? 'h:mm a' : 'HH:mm')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex">
                   {/* Time Axis */}
                   <div className="w-20 shrink-0 border-r border-ds-border bg-ds-surface/30">
                     {Array.from({length: 16}, (_, i) => i + 8).map(hour => (
                       <div key={hour} className="h-24 border-b border-ds-border/50 relative">
-                        <span className="absolute -top-2.5 left-0 w-full text-center text-xs font-medium text-ds-textMuted bg-ds-background px-1">
-                          {String(hour).padStart(2, '0')}:00
+                        <span className="absolute -top-2.5 left-0 w-full text-center text-[10px] font-medium text-ds-textMuted bg-ds-background px-1">
+                          {timeFormat === '12h' 
+                            ? `${hour === 12 ? 12 : hour % 12}:00 ${hour >= 12 ? 'PM' : 'AM'}` 
+                            : `${String(hour).padStart(2, '0')}:00`}
                         </span>
                       </div>
                     ))}
