@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useSettings } from '../context/SettingsContext';
 
-export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
+export function PostDetailsModal({ isOpen, posts, onClose, onDelete, onUpdate }) {
   const { timezone, timeFormat } = useSettings();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
@@ -77,7 +77,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
       const targetPosts = isGroup ? posts.filter(p => selectedPostsForEdit.includes(p.id)) : [post];
       
       if (targetPosts.length === 0) {
-        alert("Please select at least one account to update.");
+        console.warn("Please select at least one account to update.");
         setIsSaving(false);
         return;
       }
@@ -95,13 +95,13 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
       
       if (allOk) {
         setIsEditing(false);
-        alert(targetPosts.length > 1 ? `Time updated successfully for ${targetPosts.length} selected accounts! Refresh the calendar to see the changes.` : "Time updated successfully! Refresh the calendar to see the changes.");
+        if (onUpdate) onUpdate();
         onClose();
       } else {
-        alert("Failed to update time for one or more posts");
+        console.error("Failed to update time for one or more posts");
       }
     } catch (e) {
-      alert("Network error updating time");
+      console.error("Network error updating time", e);
     } finally {
       setIsSaving(false);
     }

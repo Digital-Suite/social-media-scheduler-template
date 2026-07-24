@@ -114,6 +114,7 @@ export function CalendarView() {
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const [realPosts, setRealPosts] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -194,7 +195,7 @@ export function CalendarView() {
           if (osSocket) osSocket.disconnect();
         };
       }).catch(err => console.error('Failed to load socket.io-client', err));
-  }, [timezone, timeFormat, activeWorkspace]); // Re-fetch occasionally
+  }, [timezone, timeFormat, activeWorkspace, refreshKey]); // Re-fetch occasionally
 
   const handleDeletePost = async (id) => {
     try {
@@ -210,11 +211,10 @@ export function CalendarView() {
           }
         }
       } else {
-        alert('Failed to delete post');
+        console.error('Failed to delete post');
       }
     } catch (err) {
-      console.error(err);
-      alert('Network error deleting post');
+      console.error('Network error deleting post', err);
     }
   };
 
@@ -646,6 +646,7 @@ export function CalendarView() {
         posts={selectedPosts} 
         onClose={() => setSelectedPosts(null)} 
         onDelete={handleDeletePost}
+        onUpdate={() => setRefreshKey(k => k + 1)}
       />
 
     </div>
