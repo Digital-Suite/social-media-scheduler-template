@@ -87,7 +87,7 @@ export function ConnectedAccounts({ platforms }) {
         if (data.url) {
           // Send message to host OS to open the external URL since we are in an iframe
           if (window.parent !== window) {
-            window.parent.postMessage({ type: 'DIGITAL_SUITE_OPEN_URL', url: data.url }, '*');
+            window.parent.postMessage({ type: 'DIGITAL_SUITE_OPEN_URL', url: data.url, incognito: true }, '*');
           } else {
             // Fallback for standalone web mode
             const width = 600;
