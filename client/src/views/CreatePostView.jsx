@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
+import { SiThreads } from 'react-icons/si';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -29,6 +30,7 @@ const PlatformIcon = ({ platform }) => {
     case 'linkedin': return <div className="w-5 h-5 bg-blue-700 rounded-full text-white flex items-center justify-center p-1"><FaLinkedin className="w-3 h-3" /></div>;
     case 'youtube': return <div className="w-5 h-5 bg-red-600 rounded-full text-white flex items-center justify-center p-1"><FaYoutube className="w-3 h-3" /></div>;
     case 'tiktok': return <div className="w-5 h-5 bg-black rounded-full text-white flex items-center justify-center p-1"><FaTiktok className="w-3 h-3" /></div>;
+    case 'threads': return <div className="w-5 h-5 bg-black rounded-full text-white flex items-center justify-center p-1"><SiThreads className="w-3 h-3" /></div>;
     default: return null;
   }
 };

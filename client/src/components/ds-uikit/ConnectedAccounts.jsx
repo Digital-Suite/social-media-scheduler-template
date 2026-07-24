@@ -192,13 +192,12 @@ export function ConnectedAccounts({ platforms }) {
                       return (
                         <div key={account.id} className="flex items-center justify-between rounded-lg p-3 bg-ds-surface border border-ds-primary/30 transition-colors">
                           <div className="flex items-center gap-3">
-                            {account.metadata?.picture ? (
-                              <img src={account.metadata.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-ds-background flex items-center justify-center">
-                                <platform.icon className={`w-4 h-4 ${platform.iconColor}`} />
+                            <div className="relative shrink-0">
+                              <img src={account.metadata?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${account.metadata?.username || account.providerAccountId}`} alt="Avatar" className="w-10 h-10 rounded-full object-cover bg-ds-background border border-ds-border" />
+                              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${platform.bgColor} flex items-center justify-center ring-2 ring-ds-surface`}>
+                                <platform.icon className={`w-2.5 h-2.5 ${platform.iconColor}`} />
                               </div>
-                            )}
+                            </div>
                             <div>
                               <p className="text-sm font-medium text-ds-text">{account.metadata?.username || account.providerAccountId}</p>
                               {account.metadata?.email && <p className="text-xs text-ds-textMuted">{account.metadata.email}</p>}
