@@ -26,17 +26,19 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTime, setEditTime] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedPostsForEdit, setSelectedPostsForEdit] = useState([]);
 
   const timeFormatStr = timeFormat === '12h' ? 'hh:mm a' : 'HH:mm';
   const fullFormatStr = `MMM dd, yyyy, ${timeFormatStr}`;
   const logFormatStr = `MM/dd/yyyy, ${timeFormatStr}:ss`;
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && posts) {
       setActiveIndex(0);
       setIsEditing(false);
+      setSelectedPostsForEdit(posts.map(p => p.id));
     }
-  }, [isOpen]);
+  }, [isOpen, posts]);
 
   if (!posts || posts.length === 0) return null;
 
@@ -72,7 +74,15 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
       const localDate = new Date(editTime);
       const utcPostTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
       
-      const promises = posts.map(p => 
+      const targetPosts = isGroup ? posts.filter(p => selectedPostsForEdit.includes(p.id)) : [post];
+      
+      if (targetPosts.length === 0) {
+        alert("Please select at least one account to update.");
+        setIsSaving(false);
+        return;
+      }
+
+      const promises = targetPosts.map(p => 
         fetch(`/api/posts/${p.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -85,7 +95,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
       
       if (allOk) {
         setIsEditing(false);
-        alert(posts.length > 1 ? "Time updated successfully for all grouped posts! Refresh the calendar to see the changes." : "Time updated successfully! Refresh the calendar to see the changes.");
+        alert(targetPosts.length > 1 ? `Time updated successfully for ${targetPosts.length} selected accounts! Refresh the calendar to see the changes.` : "Time updated successfully! Refresh the calendar to see the changes.");
         onClose();
       } else {
         alert("Failed to update time for one or more posts");
@@ -136,6 +146,45 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
                 </button>
               </div>
             </div>
+
+            {/* Batch Edit Accounts Row */}
+            {isGroup && isEditing && (
+              <div className="bg-ds-surface px-6 py-3 border-b border-ds-border shrink-0 z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-ds-text">Select accounts to update time</h3>
+                  <button 
+                    onClick={() => setSelectedPostsForEdit(posts.map(p => p.id))}
+                    className="text-xs font-medium bg-ds-background border border-ds-border px-3 py-1 rounded-lg hover:bg-ds-border transition-colors text-ds-text"
+                  >
+                    Select All
+                  </button>
+                </div>
+                <div className="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1">
+                  {posts.map(p => (
+                    <label 
+                      key={p.id}
+                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${selectedPostsForEdit.includes(p.id) ? 'bg-ds-primary/5 border-ds-primary/30' : 'bg-ds-background border-ds-border hover:bg-ds-surface'}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (selectedPostsForEdit.includes(p.id)) {
+                          setSelectedPostsForEdit(prev => prev.filter(id => id !== p.id));
+                        } else {
+                          setSelectedPostsForEdit(prev => [...prev, p.id]);
+                        }
+                      }}
+                    >
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedPostsForEdit.includes(p.id) ? 'bg-ds-primary border-ds-primary' : 'border-ds-border bg-ds-surface'}`}>
+                        {selectedPostsForEdit.includes(p.id) && <CheckCircle2 className="w-3 h-3 text-ds-background" />}
+                      </div>
+                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        <PlatformIcon platform={p.platform} />
+                        <span className="text-xs font-bold text-ds-text">{p.authorHandle || p.platform}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-1 overflow-hidden">
               
