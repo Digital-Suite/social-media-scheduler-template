@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { format, addMinutes } from 'date-fns';
+import { Bot, Sparkles, Search, Check, Wand2 } from 'lucide-react';
 
 const PlatformIcon = ({ platform }) => {
   switch (platform) {
@@ -171,6 +172,38 @@ export function CreatePostView() {
   // New state for Preview Tab
   const [activePreviewId, setActivePreviewId] = useState(null);
 
+  // AI State
+  const [aiModels, setAiModels] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [selectedModelId, setSelectedModelId] = useState('');
+  const [selectedSkillId, setSelectedSkillId] = useState('');
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiSearchQuery, setAiSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (apiBaseUrl) {
+      // Fetch AI Models
+      fetch(`${apiBaseUrl}/api/v1/system/ai-models`, {
+        headers: { Authorization: `Bearer ${sessionToken}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        setAiModels(data);
+        if (data.length > 0) setSelectedModelId(data[0].id);
+      })
+      .catch(console.error);
+
+      // Fetch Skills
+      fetch(`${apiBaseUrl}/api/v1/system/skills`, {
+        headers: { Authorization: `Bearer ${sessionToken}` }
+      })
+      .then(res => res.json())
+      .then(data => setSkills(data))
+      .catch(console.error);
+    }
+  }, [apiBaseUrl, sessionToken]);
+
   useEffect(() => {
     // Keep active preview tab in sync with selected accounts
     if (selectedAccounts.length > 0 && !selectedAccounts.includes(activePreviewId)) {
@@ -280,9 +313,102 @@ export function CreatePostView() {
     }
   };
 
+  const handleOptimizeCaptions = async () => {
+    if (!caption) {
+      alert("Please write a master caption first.");
+      return;
+    }
+    if (selectedAccounts.length === 0) {
+      alert("Please select at least one account to optimize for.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setIsAiModalOpen(false);
+
+    try {
+      const selectedPlatforms = [...new Set(connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(a => a.provider))];
+
+      const res = await fetch(`${apiBaseUrl}/api/v1/ai/optimize-captions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          masterCaption: caption,
+          platforms: selectedPlatforms,
+          modelId: selectedModelId,
+          skillId: selectedSkillId || undefined
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      const data = await res.json();
+      
+      // Update state
+      const newPlatformCaptions = { ...platformCaptions };
+      selectedAccounts.forEach(accId => {
+        const acc = connectedAccounts.find(a => a.id === accId);
+        if (data[acc.provider]) {
+          newPlatformCaptions[accId] = data[acc.provider];
+        }
+      });
+      
+      setPlatformCaptions(newPlatformCaptions);
+      setUseSameCaption(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to optimize captions: " + err.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const activePreviewAccount = connectedAccounts.find(a => a.id === activePreviewId);
   const previewTitle = useSameCaption ? title : (platformTitles[activePreviewId] || title);
   const previewCaption = useSameCaption ? caption : (platformCaptions[activePreviewId] || caption);
+
+  const PLATFORM_LIMITS = {
+    threads: 500,
+    twitter: 280,
+    x: 280,
+    instagram: 2200,
+    tiktok: 2200,
+    linkedin: 3000,
+    facebook: 63206,
+    youtube: 5000,
+  };
+
+  const getLimitError = () => {
+    if (useSameCaption) {
+      const selectedPlatformTypes = connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(a => a.provider);
+      if (selectedPlatformTypes.length === 0) return null;
+      
+      const limits = selectedPlatformTypes.map(p => ({ platform: p, limit: PLATFORM_LIMITS[p] || 3000 }));
+      const strictest = limits.reduce((min, curr) => (curr.limit < min.limit ? curr : min), limits[0]);
+      
+      if (caption.length > strictest.limit) {
+        return `Caption exceeds the ${strictest.limit} character limit for ${strictest.platform}. Please shorten it or turn off "Same for all platforms".`;
+      }
+    } else {
+      for (const accountId of selectedAccounts) {
+        const account = connectedAccounts.find(a => a.id === accountId);
+        if (!account) continue;
+        const limit = PLATFORM_LIMITS[account.provider] || 3000;
+        const platCaption = platformCaptions[accountId] || caption;
+        if (platCaption.length > limit) {
+          return `Caption for ${account.name} exceeds the ${limit} character limit.`;
+        }
+      }
+    }
+    return null;
+  };
+
+  const limitError = getLimitError();
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden custom-scrollbar bg-ds-background relative">
@@ -300,21 +426,32 @@ export function CreatePostView() {
           <p className="text-ds-textMuted text-sm">Design, caption, and schedule your content across platforms.</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
-          <input 
-            type="datetime-local" 
-            value={postTime}
-            onChange={(e) => setPostTime(e.target.value)}
-            className="bg-ds-surface border border-ds-border text-ds-text rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-ds-primary shadow-sm"
-          />
-          <button 
-            onClick={handleSchedule}
-            disabled={isScheduling}
-            className="flex items-center justify-center gap-2 px-8 py-2.5 rounded-lg bg-ds-primary hover:bg-ds-primaryHover disabled:opacity-50 text-ds-background font-bold transition-all shadow-[0_0_15px_var(--color-primary-light)] hover:shadow-[0_0_25px_var(--color-primary)] shrink-0"
-          >
-            <CalendarClock className="w-5 h-5" />
-            {isScheduling ? 'Scheduling...' : 'Schedule Post'}
-          </button>
+        <div className="flex flex-col items-end gap-2">
+          {limitError && (
+            <div className="text-red-500 text-xs font-bold max-w-md text-right bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20">
+              {limitError}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <input 
+              type="datetime-local" 
+              value={postTime}
+              onChange={(e) => setPostTime(e.target.value)}
+              className="bg-ds-surface border border-ds-border text-ds-text rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-ds-primary shadow-sm"
+            />
+            <button 
+              onClick={handleSchedule}
+              disabled={isScheduling || !!limitError}
+              className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-lg font-bold transition-all shrink-0 ${
+                isScheduling || !!limitError 
+                ? 'bg-ds-surface border border-ds-border text-ds-textMuted opacity-50 cursor-not-allowed' 
+                : 'bg-ds-primary hover:bg-ds-primaryHover text-ds-background shadow-[0_0_15px_var(--color-primary-light)] hover:shadow-[0_0_25px_var(--color-primary)]'
+              }`}
+            >
+              <CalendarClock className="w-5 h-5" />
+              {isScheduling ? 'Scheduling...' : 'Schedule Post'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -449,12 +586,22 @@ export function CreatePostView() {
                   <div className="w-8 h-8 rounded-full bg-ds-primary/10 text-ds-primary border border-ds-primary/20 flex items-center justify-center text-sm font-bold shadow-sm">3</div>
                   <h3 className="text-lg font-semibold text-ds-text">Caption</h3>
                 </div>
-                <div className="flex items-center gap-2 bg-ds-surface px-4 py-2 rounded-xl border border-ds-border shadow-sm">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={useSameCaption} onChange={(e) => setUseSameCaption(e.target.checked)} />
-                    <div className="w-9 h-5 bg-ds-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ds-primary shadow-inner"></div>
-                  </label>
-                  <span className="text-sm font-medium text-ds-text">Same for all platforms</span>
+                
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsAiModalOpen(true)}
+                    className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#252525] border border-[#2D2D2D] text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#4F8FFF]" /> Optimize with AI
+                  </button>
+
+                  <div className="flex items-center gap-2 bg-ds-surface px-4 py-2 rounded-xl border border-ds-border shadow-sm">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" className="sr-only peer" checked={useSameCaption} onChange={(e) => setUseSameCaption(e.target.checked)} />
+                      <div className="w-9 h-5 bg-ds-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ds-primary shadow-inner"></div>
+                    </label>
+                    <span className="text-sm font-medium text-ds-text">Same for all platforms</span>
+                  </div>
                 </div>
               </div>
               
@@ -602,6 +749,126 @@ export function CreatePostView() {
 
         </div>
       </div>
+
+      {/* AI Selector Modal */}
+      {isAiModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[#161616] border border-[#2D2D2D] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            
+            <div className="flex items-center justify-between p-4 border-b border-[#2D2D2D]">
+              <span className="text-[11px] font-bold text-gray-400 tracking-wider">AI MODEL ENGINE</span>
+              <button onClick={() => setIsAiModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-[#2D2D2D]">
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="text" 
+                  placeholder="Search AI models or skills..." 
+                  value={aiSearchQuery}
+                  onChange={(e) => setAiSearchQuery(e.target.value)}
+                  className="w-full bg-[#0F0F0F] text-white border border-[#2D2D2D] rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#4F8FFF] transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+              <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Models</div>
+              <div className="flex flex-col gap-1 px-2 mb-4">
+                {aiModels.filter(m => m.name.toLowerCase().includes(aiSearchQuery.toLowerCase())).map(model => (
+                  <div 
+                    key={model.id}
+                    onClick={() => setSelectedModelId(model.id)}
+                    className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                      selectedModelId === model.id 
+                        ? 'bg-[#112411] border border-green-500/50' 
+                        : 'border border-transparent hover:bg-[#1E1E1E]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#1A2035] flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-[#4F8FFF]" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-white">{model.name}</span>
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{model.provider.toUpperCase()} AI</span>
+                      </div>
+                    </div>
+                    {selectedModelId === model.id && <Check className="w-5 h-5 text-green-500" />}
+                  </div>
+                ))}
+              </div>
+
+              <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Personas & Skills (Optional)</div>
+              <div className="flex flex-col gap-1 px-2 mb-2">
+                <div 
+                  onClick={() => setSelectedSkillId('')}
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                    !selectedSkillId 
+                      ? 'bg-[#112411] border border-green-500/50' 
+                      : 'border border-transparent hover:bg-[#1E1E1E]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center">
+                        <Bot className="w-4 h-4 text-gray-400" />
+                      </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-white">No Skill (Default)</span>
+                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">RAW MODEL INSTRUCTIONS</span>
+                    </div>
+                  </div>
+                  {!selectedSkillId && <Check className="w-5 h-5 text-green-500" />}
+                </div>
+
+                {skills.filter(s => s.name.toLowerCase().includes(aiSearchQuery.toLowerCase())).map(skill => (
+                  <div 
+                    key={skill.id}
+                    onClick={() => setSelectedSkillId(skill.id)}
+                    className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                      selectedSkillId === skill.id 
+                        ? 'bg-[#112411] border border-green-500/50' 
+                        : 'border border-transparent hover:bg-[#1E1E1E]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center">
+                        <Wand2 className="w-4 h-4 text-[#4F8FFF]" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-white">{skill.name}</span>
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{skill.category || 'GENERAL'}</span>
+                      </div>
+                    </div>
+                    {selectedSkillId === skill.id && <Check className="w-5 h-5 text-green-500" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-[#2D2D2D] bg-[#0F0F0F]">
+              <button 
+                onClick={handleOptimizeCaptions}
+                disabled={!selectedModelId || isGenerating}
+                className="w-full bg-[#00A67E] hover:bg-[#00906D] text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>Generate Captions</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
-}
+};
