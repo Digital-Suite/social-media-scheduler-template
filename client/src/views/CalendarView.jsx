@@ -40,6 +40,7 @@ import {
 import { clsx } from 'clsx';
 import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
+import { SiThreads } from 'react-icons/si';
 import { twMerge } from 'tailwind-merge';
 import { PostDetailsModal } from '../components/PostDetailsModal';
 import { useSettings } from '../context/SettingsContext';
@@ -254,6 +255,7 @@ export function CalendarView() {
       case 'linkedin': return <div className="w-4 h-4 bg-blue-700 rounded-sm text-white flex items-center justify-center"><FaLinkedin className="w-2.5 h-2.5" /></div>;
       case 'youtube': return <div className="w-4 h-4 bg-red-600 rounded-sm text-white flex items-center justify-center"><FaYoutube className="w-2.5 h-2.5" /></div>;
       case 'tiktok': return <div className="w-4 h-4 bg-black rounded-sm text-white flex items-center justify-center"><FaTiktok className="w-2.5 h-2.5" /></div>;
+      case 'threads': return <div className="w-4 h-4 bg-black rounded-sm text-white flex items-center justify-center"><SiThreads className="w-2.5 h-2.5" /></div>;
       default: return null;
     }
   };

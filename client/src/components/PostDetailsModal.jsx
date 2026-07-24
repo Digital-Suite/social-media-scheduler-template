@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
+import { SiThreads } from 'react-icons/si';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -51,6 +52,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
       case 'linkedin': return <FaLinkedin className="w-5 h-5 text-blue-600" />;
       case 'youtube': return <FaYoutube className="w-5 h-5 text-red-500" />;
       case 'tiktok': return <FaTiktok className="w-5 h-5 text-ds-text" />;
+      case 'threads': return <SiThreads className="w-5 h-5 text-ds-text" />;
       default: return null;
     }
   };
