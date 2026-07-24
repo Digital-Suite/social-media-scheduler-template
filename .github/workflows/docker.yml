@@ -64,3 +64,10 @@ jobs:
           tags: |
             ghcr.io/${{ env.REPO }}:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.REPO }}:${{ env.VERSION }}-${{ github.ref_name }}
+
+      - name: Notify Backend of Update
+        run: |
+          curl -X POST https://api.digitalsuite.app/api/v1/webhooks/app-update \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.APP_UPDATE_API_KEY }}" \
+            -d "{\"template_type\":\"social_media_scheduler_template\", \"version\":\"${{ env.VERSION }}\"}"
