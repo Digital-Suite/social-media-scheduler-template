@@ -279,20 +279,7 @@ export function CalendarView() {
       )}
       
       {/* Top Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b border-ds-border bg-ds-surface shrink-0">
-        <div className="flex items-center gap-2">
-
-          <select className="bg-ds-background border border-ds-border rounded px-3 py-1.5 text-sm text-ds-text">
-            <option>All Accounts</option>
-          </select>
-          <select className="bg-ds-background border border-ds-border rounded px-3 py-1.5 text-sm text-ds-text">
-            <option>All Status</option>
-          </select>
-          <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-ds-textMuted hover:text-ds-text">
-            <Filter className="w-4 h-4" /> Apply
-          </button>
-        </div>
-
+      <div className="flex items-center justify-end p-4 border-b border-ds-border bg-ds-surface shrink-0">
         <div className="flex items-center gap-4">
           <div className="text-sm font-medium text-ds-textMuted">{timezone.label} · {timezone.offset}</div>
           <div className="flex items-center bg-ds-background rounded-lg border border-ds-border p-1">
