@@ -67,11 +67,13 @@ jobs:
 
       - name: Notify Backend of Update
         run: |
-          if [ -z "${{ secrets.BACKEND_WEBHOOK_URL }}" ]; then
-            echo "BACKEND_WEBHOOK_URL secret is not set, skipping webhook notification."
-            exit 0
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            WEBHOOK_URL="https://api.digitalsuite.tech/api/v1/webhooks/app-update"
+          else
+            WEBHOOK_URL="https://dev-api.digitalsuite.tech/api/v1/webhooks/app-update"
           fi
-          curl -X POST ${{ secrets.BACKEND_WEBHOOK_URL }} \
+          
+          curl -X POST $WEBHOOK_URL \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.APP_UPDATE_API_KEY }}" \
             -d "{\"template_type\":\"social_media_scheduler_template\", \"version\":\"${{ env.VERSION }}\"}" \
