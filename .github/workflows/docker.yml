@@ -76,5 +76,5 @@ jobs:
           curl -X POST $WEBHOOK_URL \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.APP_UPDATE_API_KEY }}" \
-            -d "{\"template_type\":\"social_media_scheduler_template\", \"version\":\"${{ env.VERSION }}\"}" \
+            -d "{\"template_type\":\"social_media_scheduler\", \"version\":\"${{ env.VERSION }}\"}" \
             --fail --silent --show-error || echo "Webhook notification failed, but continuing pipeline."
