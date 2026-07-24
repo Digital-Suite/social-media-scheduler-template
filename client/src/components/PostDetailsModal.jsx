@@ -36,7 +36,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
     if (isOpen && posts) {
       setActiveIndex(0);
       setIsEditing(false);
-      setSelectedPostsForEdit(posts.map(p => p.id));
+      setSelectedPostsForEdit(posts.filter(p => p.status !== 'published').map(p => p.id));
     }
   }, [isOpen, posts]);
 
@@ -148,19 +148,19 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
             </div>
 
             {/* Batch Edit Accounts Row */}
-            {isGroup && isEditing && (
+            {isGroup && isEditing && posts.some(p => p.status !== 'published') && (
               <div className="bg-ds-surface px-6 py-3 border-b border-ds-border shrink-0 z-10">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-ds-text">Select accounts to update time</h3>
                   <button 
-                    onClick={() => setSelectedPostsForEdit(posts.map(p => p.id))}
+                    onClick={() => setSelectedPostsForEdit(posts.filter(p => p.status !== 'published').map(p => p.id))}
                     className="text-xs font-medium bg-ds-background border border-ds-border px-3 py-1 rounded-lg hover:bg-ds-border transition-colors text-ds-text"
                   >
                     Select All
                   </button>
                 </div>
-                <div className="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1">
-                  {posts.map(p => (
+                <div className="flex flex-wrap items-center gap-3 pb-1">
+                  {posts.filter(p => p.status !== 'published').map(p => (
                     <label 
                       key={p.id}
                       className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${selectedPostsForEdit.includes(p.id) ? 'bg-ds-primary/5 border-ds-primary/30' : 'bg-ds-background border-ds-border hover:bg-ds-surface'}`}
