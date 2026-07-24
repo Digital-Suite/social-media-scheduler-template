@@ -560,25 +560,25 @@ export function CreatePostView() {
                   <p className="text-sm font-medium">Select accounts to see a preview</p>
                 </div>
               ) : (
-                <>
-                  {/* Platform Tabs */}
+                <div className="flex flex-row items-start justify-center gap-4 h-full">
+                  {/* Platform Tabs (Vertical Sidebar) */}
                   {selectedAccounts.length > 1 && (
-                    <div className="flex gap-2 overflow-x-auto custom-scrollbar mb-6 pb-2">
+                    <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0 py-2 pr-1 max-h-[500px]">
                       {connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(acc => (
                         <button
                           key={acc.id}
+                          title={acc.metadata?.username || acc.provider}
                           onClick={() => setActivePreviewId(acc.id)}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 shadow-sm border ${activePreviewId === acc.id ? 'bg-ds-primary text-ds-background border-ds-primary shadow-[0_0_10px_var(--color-primary-light)]' : 'bg-ds-surface text-ds-text border-ds-border hover:bg-ds-background'}`}
+                          className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all shrink-0 shadow-sm border ${activePreviewId === acc.id ? 'bg-ds-primary text-ds-background border-ds-primary shadow-[0_0_10px_var(--color-primary-light)]' : 'bg-ds-surface text-ds-text border-ds-border hover:bg-ds-background'}`}
                         >
                           <PlatformIcon platform={acc.provider} />
-                          {acc.provider.charAt(0).toUpperCase() + acc.provider.slice(1)}
                         </button>
                       ))}
                     </div>
                   )}
 
                   {/* Phone Mockup Frame */}
-                  <div className="mx-auto w-full max-w-[380px] bg-ds-background border-[6px] border-ds-surface rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col h-auto min-h-[500px]">
+                  <div className="w-full max-w-[380px] bg-ds-background border-[6px] border-ds-surface rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col h-[500px] shrink-0">
                      {/* Dynamic Notch */}
                      <div className="absolute top-0 inset-x-0 h-6 bg-ds-surface rounded-b-xl w-32 mx-auto z-10"></div>
                      <div className="bg-gray-100 flex-1 w-full overflow-y-auto custom-scrollbar pt-8 pb-4 px-2">
@@ -595,7 +595,7 @@ export function CreatePostView() {
                         )}
                      </div>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>
