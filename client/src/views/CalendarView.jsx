@@ -445,8 +445,9 @@ export function CalendarView() {
               </div>
 
               {/* Weekly Time Grid */}
-              <div className="flex-1 overflow-y-auto relative">
-                
+              <div className="flex-1 overflow-y-auto">
+                <div className="relative mt-3">
+                  
                 {/* Current Time Indicator */}
                 {(() => {
                   const nowStr = formatInTimeZone(new Date(), timezone.value, 'HH:mm');
@@ -539,6 +540,7 @@ export function CalendarView() {
                       );
                     })}
                   </div>
+                </div>
                 </div>
               </div>
             </div>
