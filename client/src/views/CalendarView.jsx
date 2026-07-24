@@ -364,14 +364,16 @@ export function CalendarView() {
                       
                       <div className="flex flex-col gap-1.5 overflow-y-auto h-full">
                         {Object.values(posts.reduce((acc, p) => {
-                          const key = `${p.platform}-${p.status}`;
-                          if (!acc[key]) acc[key] = { platform: p.platform, status: p.status, count: 0, posts: [] };
+                          const key = p.post_time;
+                          if (!acc[key]) acc[key] = { time: p.post_time, status: p.status, count: 0, posts: [] };
                           acc[key].count += 1;
                           acc[key].posts.push(p);
+                          if (p.status === 'failed') acc[key].status = 'failed';
+                          else if (p.status !== acc[key].status) acc[key].status = 'mixed';
                           return acc;
                         }, {})).map(group => (
                           <div 
-                            key={`${group.platform}-${group.status}`} 
+                            key={group.time} 
                             onMouseEnter={(e) => {
                               const rect = e.currentTarget.getBoundingClientRect();
                               setHoveredPost({ group, rect });
@@ -382,23 +384,28 @@ export function CalendarView() {
                               setSelectedPosts(group.posts);
                             }}
                             className={cn(
-                              "border rounded p-1.5 flex items-center justify-between text-xs shadow-sm transition-colors shrink-0 cursor-pointer relative",
+                              "border rounded p-1.5 flex flex-col gap-1 text-xs shadow-sm transition-colors shrink-0 cursor-pointer relative",
                               group.status === 'published' 
                                 ? "bg-ds-primary/5 border-ds-primary/30 hover:bg-ds-primary/10" 
+                                : group.status === 'failed' ? "bg-red-500/5 border-red-500/30 hover:bg-red-500/10"
                                 : "bg-ds-surface/50 border-ds-border border-dashed hover:border-ds-primary/50 hover:bg-ds-surface"
                             )}
                           >
-                            <div className="flex items-center gap-2">
-                              <PlatformIcon platform={group.platform} />
-                              <span className={cn("font-semibold", group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
-                                {group.count} {group.status === 'published' ? 'Published' : 'Scheduled'}
-                              </span>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-0.5 flex-wrap">
+                                {group.posts.map(p => (
+                                  <PlatformIcon key={p.id} platform={p.platform} />
+                                ))}
+                              </div>
+                              {group.status === 'published' ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-ds-primary" />
+                              ) : (
+                                <Clock className="w-3.5 h-3.5 text-ds-textMuted" />
+                              )}
                             </div>
-                            {group.status === 'published' ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-ds-primary" />
-                            ) : (
-                              <Clock className="w-3.5 h-3.5 text-ds-textMuted" />
-                            )}
+                            <span className={cn("font-semibold text-[10px]", group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
+                              {group.count} {group.status === 'published' ? 'Published' : group.status === 'mixed' ? 'Mixed' : 'Scheduled'}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -494,10 +501,12 @@ export function CalendarView() {
 
                           {/* Absolute Positioned Posts (Grouped) */}
                           {Object.values(posts.reduce((acc, p) => {
-                            const key = `${p.platform}-${p.status}`;
-                            if (!acc[key]) acc[key] = { platform: p.platform, status: p.status, count: 0, posts: [] };
+                            const key = p.post_time;
+                            if (!acc[key]) acc[key] = { time: p.post_time, status: p.status, count: 0, posts: [] };
                             acc[key].count += 1;
                             acc[key].posts.push(p);
+                            if (p.status === 'failed') acc[key].status = 'failed';
+                            else if (p.status !== acc[key].status) acc[key].status = 'mixed';
                             return acc;
                           }, {})).map(group => {
                             const earliestPost = group.posts.reduce((earliest, p) => p.time < earliest.time ? p : earliest, group.posts[0]);
@@ -506,7 +515,7 @@ export function CalendarView() {
 
                             return (
                               <div 
-                                key={`${group.platform}-${group.status}`}
+                                key={group.time}
                                 className={cn(
                                   "absolute left-1 right-1 backdrop-blur-sm border rounded-md p-1.5 shadow-sm transition-all cursor-pointer z-20 flex items-center justify-between",
                                   group.status === 'published'
@@ -524,10 +533,12 @@ export function CalendarView() {
                                   setSelectedPosts(group.posts);
                                 }}
                               >
-                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                  <PlatformIcon platform={group.platform} />
-                                  <span className={cn("text-[10px] font-semibold truncate", group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
-                                    {group.count} {group.status === 'published' ? 'Published' : 'Scheduled'}
+                                <div className="flex items-center gap-0.5 overflow-hidden">
+                                  {group.posts.map(p => (
+                                    <PlatformIcon key={p.id} platform={p.platform} />
+                                  ))}
+                                  <span className={cn("text-[10px] font-semibold truncate ml-1", group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
+                                    {group.count} {group.status === 'published' ? 'Published' : group.status === 'mixed' ? 'Mixed' : 'Scheduled'}
                                   </span>
                                 </div>
                                 {group.status === 'published' ? (
@@ -568,11 +579,15 @@ export function CalendarView() {
         >
           <div className="w-72 bg-ds-background border border-ds-border shadow-2xl shadow-black/50 rounded-xl overflow-hidden flex flex-col max-h-[400px]">
             {/* Popover Header */}
-            <div className="bg-ds-surface px-4 py-3 border-b border-ds-border flex items-center gap-2 shrink-0">
-              <PlatformIcon platform={hoveredPost.group.platform} />
-              <span className="text-sm font-bold text-ds-text capitalize">{hoveredPost.group.platform}</span>
-              <span className={cn("text-xs font-semibold ml-auto", hoveredPost.group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
-                {hoveredPost.group.count} {hoveredPost.group.status}
+            <div className="bg-ds-surface px-4 py-3 border-b border-ds-border flex flex-col gap-2 shrink-0">
+              <div className="flex items-center gap-1">
+                {hoveredPost.group.posts.map(p => (
+                  <PlatformIcon key={p.id} platform={p.platform} />
+                ))}
+              </div>
+              <span className="text-sm font-bold text-ds-text">Grouped Post ({hoveredPost.group.count})</span>
+              <span className={cn("text-xs font-semibold", hoveredPost.group.status === 'published' ? "text-ds-primary" : "text-ds-textMuted")}>
+                {hoveredPost.group.status}
               </span>
             </div>
 
@@ -583,6 +598,7 @@ export function CalendarView() {
                   <div className="px-4 pt-3 flex flex-col">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
+                        <PlatformIcon platform={post.platform} />
                         <div className="w-5 h-5 rounded-full bg-ds-surface border border-ds-border overflow-hidden">
                           <img src={post.authorAvatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.authorName}`} alt="" className="w-full h-full object-cover" />
                         </div>

@@ -71,18 +71,24 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete }) {
     try {
       const localDate = new Date(editTime);
       const utcPostTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
-      const res = await fetch(`/api/posts/${post.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postTime: utcPostTime })
-      });
-      if (res.ok) {
+      
+      const promises = posts.map(p => 
+        fetch(`/api/posts/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postTime: utcPostTime })
+        })
+      );
+      
+      const responses = await Promise.all(promises);
+      const allOk = responses.every(r => r.ok);
+      
+      if (allOk) {
         setIsEditing(false);
-        // Force refresh by closing modal or user refresh. For a quick fix, just alert
-        alert("Time updated successfully! Refresh the calendar to see the changes.");
+        alert(posts.length > 1 ? "Time updated successfully for all grouped posts! Refresh the calendar to see the changes." : "Time updated successfully! Refresh the calendar to see the changes.");
         onClose();
       } else {
-        alert("Failed to update time");
+        alert("Failed to update time for one or more posts");
       }
     } catch (e) {
       alert("Network error updating time");
