@@ -464,11 +464,9 @@ export function CalendarView() {
                 {(() => {
                   const nowStr = formatInTimeZone(new Date(), timezone.value, 'HH:mm');
                   const [h, m] = nowStr.split(':').map(Number);
-                  const isVisible = h >= 8 && h <= 23;
-                  if (!isVisible) return null;
                   
                   return (
-                    <div className="absolute left-20 right-0 z-10 pointer-events-none" style={{ top: `${(h + (m / 60) - 8) * 96}px` }}>
+                    <div className="absolute left-20 right-0 z-10 pointer-events-none" style={{ top: `${(h + (m / 60)) * 96}px` }}>
                       <div className="h-px bg-blue-500 relative flex items-center">
                         <div className="absolute right-0 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
                           {formatInTimeZone(new Date(), timezone.value, timeFormat === '12h' ? 'h:mm a' : 'HH:mm')}
@@ -481,11 +479,11 @@ export function CalendarView() {
                 <div className="flex">
                   {/* Time Axis */}
                   <div className="w-20 shrink-0 border-r border-ds-border bg-ds-surface/30">
-                    {Array.from({length: 16}, (_, i) => i + 8).map(hour => (
+                    {Array.from({length: 24}, (_, i) => i).map(hour => (
                       <div key={hour} className="h-24 border-b border-ds-border/50 relative">
                         <span className="absolute -top-2.5 left-0 w-full text-center text-[10px] font-medium text-ds-textMuted bg-ds-background px-1">
                           {timeFormat === '12h' 
-                            ? `${hour === 12 ? 12 : hour % 12}:00 ${hour >= 12 ? 'PM' : 'AM'}` 
+                            ? `${hour === 0 ? 12 : hour === 12 ? 12 : hour % 12}:00 ${hour >= 12 ? 'PM' : 'AM'}` 
                             : `${String(hour).padStart(2, '0')}:00`}
                         </span>
                       </div>
@@ -500,7 +498,7 @@ export function CalendarView() {
                         <div key={idx} className={cn("relative border-r border-ds-border last:border-r-0 border-b border-ds-border/50", isToday(day) && "bg-ds-primary/5")}>
                           
                           {/* Hour Grid Lines */}
-                          {Array.from({length: 16}, (_, i) => i + 8).map(hour => (
+                          {Array.from({length: 24}, (_, i) => i).map(hour => (
                             <div key={hour} className="h-24 border-b border-ds-border/30 last:border-b-0 group cursor-pointer hover:bg-ds-surface/50 transition-colors" />
                           ))}
 
@@ -514,7 +512,7 @@ export function CalendarView() {
                           }, {})).map(group => {
                             const earliestPost = group.posts.reduce((earliest, p) => p.time < earliest.time ? p : earliest, group.posts[0]);
                             const [h, m] = earliestPost.time.split(':').map(Number);
-                            const topPx = (h - 8 + (m / 60)) * 96;
+                            const topPx = (h + (m / 60)) * 96;
 
                             return (
                               <div 
