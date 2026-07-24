@@ -141,9 +141,10 @@ export function ConnectedAccounts({ platforms }) {
         {platforms.map((platform) => {
           // Find all connected accounts for this platform
           const providerAccounts = connectedAccounts.filter(a => a.provider.toLowerCase() === platform.id.toLowerCase());
-          const isConnected = providerAccounts.length > 0;
-          // If any account is expired, we flag the whole provider as having an issue
-          const hasExpired = providerAccounts.some(a => a.isExpired);
+          const linkedProviderAccounts = providerAccounts.filter(account => workspaceAccountIds.includes(String(account.id)));
+          const isConnected = linkedProviderAccounts.length > 0;
+          // If any linked account is expired, we flag the whole provider as having an issue
+          const hasExpired = linkedProviderAccounts.some(a => a.isExpired);
 
           return (
             <div key={platform.id} className="flex flex-col gap-2">
@@ -187,9 +188,7 @@ export function ConnectedAccounts({ platforms }) {
               {/* Render connected sub-accounts */}
               {isConnected && (
                 <div className="flex flex-col gap-2 pl-4 border-l-2 border-ds-border ml-6 mt-1">
-                  {providerAccounts
-                    .filter(account => workspaceAccountIds.includes(String(account.id)))
-                    .map((account) => {
+                  {linkedProviderAccounts.map((account) => {
                       return (
                         <div key={account.id} className="flex items-center justify-between rounded-lg p-3 bg-ds-surface border border-ds-primary/30 transition-colors">
                           <div className="flex items-center gap-3">
