@@ -98,6 +98,7 @@ export function CalendarView() {
   const { activeWorkspace } = useWorkspace();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hoveredPost, setHoveredPost] = useState(null);
+  const hoverTimeoutRef = React.useRef(null);
   const [selectedPosts, setSelectedPosts] = useState(null);
   const [viewMode, setViewMode] = useState('monthly'); // 'monthly' | 'weekly'
   const [updateAvailable, setUpdateAvailable] = useState(null);
@@ -375,10 +376,15 @@ export function CalendarView() {
                           <div 
                             key={group.time} 
                             onMouseEnter={(e) => {
+                              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
                               const rect = e.currentTarget.getBoundingClientRect();
                               setHoveredPost({ group, rect });
                             }}
-                            onMouseLeave={() => setHoveredPost(null)}
+                            onMouseLeave={() => {
+                              hoverTimeoutRef.current = setTimeout(() => {
+                                setHoveredPost(null);
+                              }, 300);
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedPosts(group.posts);
@@ -524,10 +530,15 @@ export function CalendarView() {
                                 )}
                                 style={{ top: `${topPx}px` }}
                                 onMouseEnter={(e) => {
+                                  if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
                                   const rect = e.currentTarget.getBoundingClientRect();
                                   setHoveredPost({ group, rect });
                                 }}
-                                onMouseLeave={() => setHoveredPost(null)}
+                                onMouseLeave={() => {
+                                  hoverTimeoutRef.current = setTimeout(() => {
+                                    setHoveredPost(null);
+                                  }, 300);
+                                }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedPosts(group.posts);
@@ -569,12 +580,20 @@ export function CalendarView() {
         const showOnLeft = spaceOnRight < POPUP_WIDTH;
         return (
         <div 
-          className="fixed z-50 pointer-events-none"
+          className="fixed z-[100]"
           style={{
             top: hoveredPost.rect.top - 20 + 'px',
             ...(showOnLeft
               ? { left: hoveredPost.rect.left - POPUP_WIDTH - 10 + 'px' }
               : { left: hoveredPost.rect.right + 10 + 'px' }),
+          }}
+          onMouseEnter={() => {
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+          }}
+          onMouseLeave={() => {
+            hoverTimeoutRef.current = setTimeout(() => {
+              setHoveredPost(null);
+            }, 300);
           }}
         >
           <div className="w-72 bg-ds-background border border-ds-border shadow-2xl shadow-black/50 rounded-xl overflow-hidden flex flex-col max-h-[400px]">

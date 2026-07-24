@@ -39,11 +39,30 @@ const DEFAULT_TIMEZONE = TIMEZONES.find(tz => tz.value === 'America/New_York');
 const SettingsContext = createContext(null);
 
 export function SettingsProvider({ children }) {
-  const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
-  const [timeFormat, setTimeFormat] = useState('24h'); // '12h' or '24h'
+  const [timezone, setTimezone] = useState(() => {
+    const saved = localStorage.getItem('ds_scheduler_timezone');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return DEFAULT_TIMEZONE;
+  });
+  
+  const [timeFormat, setTimeFormat] = useState(() => {
+    return localStorage.getItem('ds_scheduler_timeformat') || '12h';
+  });
+
+  const handleSetTimezone = (tz) => {
+    setTimezone(tz);
+    localStorage.setItem('ds_scheduler_timezone', JSON.stringify(tz));
+  };
+
+  const handleSetTimeFormat = (fmt) => {
+    setTimeFormat(fmt);
+    localStorage.setItem('ds_scheduler_timeformat', fmt);
+  };
 
   return (
-    <SettingsContext.Provider value={{ timezone, setTimezone, timeFormat, setTimeFormat }}>
+    <SettingsContext.Provider value={{ timezone, setTimezone: handleSetTimezone, timeFormat, setTimeFormat: handleSetTimeFormat }}>
       {children}
     </SettingsContext.Provider>
   );
