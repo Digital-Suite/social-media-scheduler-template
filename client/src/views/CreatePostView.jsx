@@ -340,7 +340,7 @@ export function CreatePostView() {
     }
 
     setIsGenerating(true);
-    setIsAiModalOpen(false);
+    setAiModalMode(null);
 
     try {
       const selectedPlatforms = [...new Set(connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(a => a.provider))];
@@ -693,7 +693,7 @@ export function CreatePostView() {
                     >
                       <div className="flex items-center gap-2">
                         <Bot className="w-4 h-4 text-ds-textMuted" />
-                        <span className="text-sm">Persona: {selectedSkillId ? skills.find(s => s.id === selectedSkillId)?.name || 'No Skill' : 'No Skill (Default)'}</span>
+                        <span className="text-sm">Skill: {selectedSkillId ? skills.find(s => s.id === selectedSkillId)?.name || 'No Skill' : 'No Skill (Default)'}</span>
                       </div>
                     </button>
                   </div>
@@ -901,22 +901,26 @@ export function CreatePostView() {
                       <div 
                         key={model.id}
                         onClick={() => { setSelectedModelId(model.id); setAiModalMode(null); }}
-                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
                           selectedModelId === model.id 
-                            ? 'bg-[#112411] border border-green-500/50' 
-                            : 'border border-transparent hover:bg-[#1E1E1E]'
+                            ? 'bg-[#112411]' 
+                            : 'border-transparent hover:bg-[#1E1E1E]'
                         }`}
+                        style={selectedModelId === model.id ? { borderColor: model.color || '#22c55e', backgroundColor: `${model.color || '#22c55e'}15` } : {}}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#1A2035] flex items-center justify-center">
-                            <Sparkles className="w-4 h-4 text-[#4F8FFF]" />
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: `${model.color || '#4F8FFF'}15`, border: `1px solid ${model.color || '#4F8FFF'}30` }}
+                          >
+                            <Database className="w-4 h-4" style={{ color: model.color || '#4F8FFF' }} />
                           </div>
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-white">{model.name}</span>
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{model.provider.toUpperCase()} AI</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: model.color || '#9ca3af' }}>{model.provider.toUpperCase()} AI</span>
                           </div>
                         </div>
-                        {selectedModelId === model.id && <Check className="w-5 h-5 text-green-500" />}
+                        {selectedModelId === model.id && <Check className="w-5 h-5" style={{ color: model.color || '#22c55e' }} />}
                       </div>
                     ))}
                     {aiModels.filter(m => m.name.toLowerCase().includes(aiSearchQuery.toLowerCase())).length === 0 && (
@@ -932,14 +936,14 @@ export function CreatePostView() {
                   <div className="flex flex-col gap-1 px-2 mb-2">
                     <div 
                       onClick={() => { setSelectedSkillId(''); setAiModalMode(null); }}
-                      className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                      className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
                         !selectedSkillId 
-                          ? 'bg-[#112411] border border-green-500/50' 
-                          : 'border border-transparent hover:bg-[#1E1E1E]'
+                          ? 'bg-[#112411] border-green-500/50' 
+                          : 'border-transparent hover:bg-[#1E1E1E]'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center">
+                         <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center border border-gray-700">
                             <Bot className="w-4 h-4 text-gray-400" />
                           </div>
                         <div className="flex flex-col">
@@ -954,22 +958,26 @@ export function CreatePostView() {
                       <div 
                         key={skill.id}
                         onClick={() => { setSelectedSkillId(skill.id); setAiModalMode(null); }}
-                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
                           selectedSkillId === skill.id 
-                            ? 'bg-[#112411] border border-green-500/50' 
-                            : 'border border-transparent hover:bg-[#1E1E1E]'
+                            ? 'bg-[#112411]' 
+                            : 'border-transparent hover:bg-[#1E1E1E]'
                         }`}
+                        style={selectedSkillId === skill.id ? { borderColor: skill.accentColor || '#4F8FFF', backgroundColor: `${skill.accentColor || '#4F8FFF'}15` } : {}}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center">
-                            <Wand2 className="w-4 h-4 text-[#4F8FFF]" />
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: `${skill.accentColor || '#4F8FFF'}15`, border: `1px solid ${skill.accentColor || '#4F8FFF'}30` }}
+                          >
+                            <Wand2 className="w-4 h-4" style={{ color: skill.accentColor || '#4F8FFF' }} />
                           </div>
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-white">{skill.name}</span>
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{skill.category || 'GENERAL'}</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: skill.accentColor || '#9ca3af' }}>{skill.category || 'GENERAL'}</span>
                           </div>
                         </div>
-                        {selectedSkillId === skill.id && <Check className="w-5 h-5 text-green-500" />}
+                        {selectedSkillId === skill.id && <Check className="w-5 h-5" style={{ color: skill.accentColor || '#4F8FFF' }} />}
                       </div>
                     ))}
                   </div>
