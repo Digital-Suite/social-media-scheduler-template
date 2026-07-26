@@ -219,6 +219,22 @@ export function CreatePostView() {
     );
   };
 
+  const handleToggleSameCaption = (checked) => {
+    if (!checked) {
+      // User turned OFF "Same for all platforms"
+      // Copy the master caption and title to all individual platforms
+      const newPlatformCaptions = { ...platformCaptions };
+      const newPlatformTitles = { ...platformTitles };
+      selectedAccounts.forEach(id => {
+        newPlatformCaptions[id] = caption;
+        newPlatformTitles[id] = title;
+      });
+      setPlatformCaptions(newPlatformCaptions);
+      setPlatformTitles(newPlatformTitles);
+    }
+    setUseSameCaption(checked);
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -649,7 +665,7 @@ export function CreatePostView() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 bg-ds-surface px-4 py-2 rounded-xl border border-ds-border shadow-sm">
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" checked={useSameCaption} onChange={(e) => setUseSameCaption(e.target.checked)} />
+                      <input type="checkbox" className="sr-only peer" checked={useSameCaption} onChange={(e) => handleToggleSameCaption(e.target.checked)} />
                       <div className="w-9 h-5 bg-ds-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ds-primary shadow-inner"></div>
                     </label>
                     <span className="text-sm font-medium text-ds-text">Same for all platforms</span>
