@@ -515,8 +515,10 @@ export function CalendarView() {
                             else if (p.status !== acc[key].status) acc[key].status = 'mixed';
                             return acc;
                           }, {})).map(group => {
-                            const earliestPost = group.posts.reduce((earliest, p) => p.time < earliest.time ? p : earliest, group.posts[0]);
-                            const [h, m] = earliestPost.time.split(':').map(Number);
+                            const earliestPost = group.posts.reduce((earliest, p) => p.post_time < earliest.post_time ? p : earliest, group.posts[0]);
+                            const dateObj = new Date(earliestPost.post_time);
+                            const h = dateObj.getHours();
+                            const m = dateObj.getMinutes();
                             const topPx = (h + (m / 60)) * 96;
 
                             return (
