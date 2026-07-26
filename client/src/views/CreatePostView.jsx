@@ -369,14 +369,26 @@ export function CreatePostView() {
       
       // Update state
       const newPlatformCaptions = { ...platformCaptions };
+      const newPlatformTitles = { ...platformTitles };
+      
       selectedAccounts.forEach(accId => {
         const acc = connectedAccounts.find(a => a.id === accId);
-        if (data[acc.provider]) {
-          newPlatformCaptions[accId] = data[acc.provider];
+        const generated = data[acc.provider];
+        if (generated) {
+          if (typeof generated === 'string') {
+             // Fallback for legacy format
+             newPlatformCaptions[accId] = generated;
+          } else {
+             newPlatformCaptions[accId] = generated.caption || '';
+             if (generated.title) {
+               newPlatformTitles[accId] = generated.title;
+             }
+          }
         }
       });
       
       setPlatformCaptions(newPlatformCaptions);
+      setPlatformTitles(newPlatformTitles);
       setUseSameCaption(false);
     } catch (err) {
       console.error(err);
