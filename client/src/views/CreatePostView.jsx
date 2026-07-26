@@ -224,12 +224,12 @@ export function CreatePostView() {
   const handleToggleSameCaption = (checked) => {
     if (!checked) {
       // User turned OFF "Same for all platforms"
-      // Copy the master caption and title to all individual platforms
+      // Initialize the individual platforms ONLY if they are empty
       const newPlatformCaptions = { ...platformCaptions };
       const newPlatformTitles = { ...platformTitles };
       selectedAccounts.forEach(id => {
-        newPlatformCaptions[id] = caption;
-        newPlatformTitles[id] = title;
+        if (!newPlatformCaptions[id]) newPlatformCaptions[id] = caption;
+        if (!newPlatformTitles[id]) newPlatformTitles[id] = title;
       });
       setPlatformCaptions(newPlatformCaptions);
       setPlatformTitles(newPlatformTitles);
@@ -637,15 +637,23 @@ export function CreatePostView() {
               
               <div className="bg-ds-surface border border-ds-border rounded-2xl p-4 shadow-sm">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {connectedAccounts.map(acc => (
+                  {connectedAccounts.map(acc => {
+                    const requiresMedia = ['youtube', 'tiktok', 'instagram'].includes(acc.provider.toLowerCase()) && !mediaUrl;
+                    return (
                     <label 
                       key={acc.id} 
-                      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer group transition-all ${selectedAccounts.includes(acc.id) ? 'bg-ds-primary/5 border border-ds-primary/30' : 'hover:bg-ds-background border border-transparent'}`}
+                      className={`flex items-center gap-3 p-3 rounded-xl group transition-all relative ${requiresMedia ? 'opacity-50 cursor-not-allowed bg-ds-surface/30' : 'cursor-pointer'} ${selectedAccounts.includes(acc.id) ? 'bg-ds-primary/5 border border-ds-primary/30' : 'hover:bg-ds-background border border-transparent'}`}
                       onClick={(e) => {
                         e.preventDefault();
+                        if (requiresMedia) return;
                         toggleAccount(acc.id);
                       }}
                     >
+                      {requiresMedia && (
+                        <div className="absolute top-1 right-1 text-[9px] font-bold bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded border border-red-500/20">
+                          Requires Media
+                        </div>
+                      )}
                       <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors shadow-sm shrink-0 ${selectedAccounts.includes(acc.id) ? 'bg-ds-primary border-ds-primary' : 'border-ds-border bg-ds-background group-hover:border-ds-textMuted'}`}>
                         {selectedAccounts.includes(acc.id) && <CheckCircle2 className="w-3.5 h-3.5 text-ds-background" />}
                       </div>
@@ -663,7 +671,8 @@ export function CreatePostView() {
                         <span className="text-xs text-ds-textMuted leading-tight truncate mt-0.5">@{acc.metadata?.handle || acc.metadata?.username || acc.provider}</span>
                       </div>
                     </label>
-                  ))}
+                    );
+                  })}
                   {connectedAccounts.length === 0 && (
                      <div className="col-span-full py-6 text-center text-ds-textMuted text-sm bg-ds-background/50 rounded-xl border border-dashed border-ds-border">
                        No accounts connected. Please go to Accounts to link them first.
