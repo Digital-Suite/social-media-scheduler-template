@@ -1,0 +1,40 @@
+name: Notify Backend
+
+on:
+  workflow_run:
+    workflows: ["Publish Docker image"]
+    types:
+      - completed
+
+jobs:
+  notify:
+    name: Trigger Update Webhook
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Notify Backend of Update
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "${{ github.event.workflow_run.head_branch }}" = "main" ]; then
+            WEBHOOK_URL="https://api.digitalsuite.tech/api/v1/webhooks/app-update"
+          else
+            WEBHOOK_URL="https://dev-api.digitalsuite.tech/api/v1/webhooks/app-update"
+          fi
+          
+          echo "Triggering webhook for version $VERSION on branch ${{ github.event.workflow_run.head_branch }}"
+          
+          curl -X POST $WEBHOOK_URL \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.APP_UPDATE_API_KEY }}" \
+            -d "{\"template_type\":\"social_media_scheduler\", \"version\":\"$VERSION\"}" \
+            --fail --silent --show-error || echo "Webhook notification failed."
