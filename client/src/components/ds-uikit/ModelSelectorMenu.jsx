@@ -49,7 +49,7 @@ export function ModelSelectorMenu({ models, onSelect, onClose, selectedModel }) 
 
   return (
     <div 
-      className="absolute top-full left-0 mt-2 w-[340px] bg-[var(--color-surface)] border rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden animate-page-enter flex flex-col"
+      className="absolute top-full left-0 right-0 mt-2 bg-[var(--color-surface)] border rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden animate-page-enter flex flex-col"
       style={{ 
         borderColor: 'var(--color-border)', 
         zIndex: 50, 

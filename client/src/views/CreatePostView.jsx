@@ -677,8 +677,8 @@ export function CreatePostView() {
               
               {useSameCaption ? (
                 <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 relative">
+                  <div className="flex flex-col gap-2">
+                    <div className={`flex-1 relative ${aiModalMode === 'model' ? 'z-50' : 'z-10'}`}>
                       <button 
                         onClick={() => { setAiSearchQuery(''); setAiModalMode(aiModalMode === 'model' ? null : 'model'); }} 
                         className="w-full flex items-center justify-between px-4 py-3 bg-ds-primary/5 border border-ds-primary/20 rounded-xl text-ds-primary font-medium hover:bg-ds-primary/10 transition-colors shadow-sm"
@@ -700,7 +700,7 @@ export function CreatePostView() {
                       )}
                     </div>
                     
-                    <div className="flex-1 relative">
+                    <div className={`flex-1 relative ${aiModalMode === 'skill' ? 'z-50' : 'z-10'}`}>
                       <button 
                         onClick={() => { setAiSearchQuery(''); setAiModalMode(aiModalMode === 'skill' ? null : 'skill'); }} 
                         className="w-full flex items-center justify-between px-4 py-3 bg-ds-surface border border-ds-border rounded-xl text-ds-text font-medium hover:bg-ds-border transition-colors shadow-sm"
