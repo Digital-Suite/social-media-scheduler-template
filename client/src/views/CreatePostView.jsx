@@ -936,6 +936,7 @@ export function CreatePostView() {
                   </div>
                 ))}
               </div>
+            </div>
           </div>
         </div>
       )}
