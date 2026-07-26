@@ -42,7 +42,9 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete, onUpdate })
 
   if (!posts || posts.length === 0) return null;
 
-  const post = posts[activeIndex];
+  const post = posts[activeIndex] || posts[0];
+  if (!post) return null;
+
   const isGroup = posts.length > 1;
 
   const PlatformIcon = ({ platform }) => {
@@ -133,7 +135,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete, onUpdate })
                 <p className="text-ds-textMuted text-sm">View and manage your social media post</p>
               </div>
               <div className="flex items-center gap-2">
-                {onDelete && post.status !== 'published' && (
+                {onDelete && (
                   <button 
                     onClick={() => onDelete(post.id)} 
                     className="px-3 py-1.5 hover:bg-red-500/10 rounded-lg text-red-400 hover:text-red-500 text-sm font-bold transition-colors"
