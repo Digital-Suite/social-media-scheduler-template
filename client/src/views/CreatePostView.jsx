@@ -610,12 +610,17 @@ export function CreatePostView() {
                   <div className="w-8 h-8 rounded-full bg-ds-primary/10 text-ds-primary border border-ds-primary/20 flex items-center justify-center text-sm font-bold shadow-sm">2</div>
                   <h3 className="text-lg font-semibold text-ds-text">Select Accounts</h3>
                 </div>
-                <button 
-                  onClick={() => setSelectedAccounts(connectedAccounts.map(a => a.id))}
-                  className="text-xs font-medium bg-ds-surface border border-ds-border px-4 py-1.5 rounded-lg text-ds-text hover:bg-ds-border transition-colors shadow-sm"
-                >
-                  Select All
-                </button>
+                {(() => {
+                  const isAllSelected = connectedAccounts.length > 0 && selectedAccounts.length === connectedAccounts.length;
+                  return (
+                    <button 
+                      onClick={() => setSelectedAccounts(isAllSelected ? [] : connectedAccounts.map(a => a.id))}
+                      className="text-xs font-medium bg-ds-surface border border-ds-border px-4 py-1.5 rounded-lg text-ds-text hover:bg-ds-border transition-colors shadow-sm"
+                    >
+                      {isAllSelected ? 'Unselect All' : 'Select All'}
+                    </button>
+                  );
+                })()}
               </div>
               
               <div className="bg-ds-surface border border-ds-border rounded-2xl p-4 shadow-sm">
