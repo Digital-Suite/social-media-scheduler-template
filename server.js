@@ -272,7 +272,13 @@ app.put('/api/posts/:id', async (req, res) => {
 
 
 // Cron Job for publishing posts
+let isCronRunning = false;
 cron.schedule('* * * * *', async () => {
+  if (isCronRunning) {
+    console.log('Previous cron job still running. Skipping this minute...');
+    return;
+  }
+  isCronRunning = true;
   console.log('Checking for scheduled posts...');
   try {
     const rows = await dbAll("SELECT * FROM posts WHERE status = 'scheduled' AND post_time <= datetime('now')");
@@ -323,6 +329,8 @@ cron.schedule('* * * * *', async () => {
     }
   } catch (err) {
     console.error('Error in cron job:', err);
+  } finally {
+    isCronRunning = false;
   }
 });
 

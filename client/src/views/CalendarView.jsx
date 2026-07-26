@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import pkg from '../../../package.json';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { 
   ChevronLeft, 
@@ -184,7 +185,7 @@ export function CalendarView() {
         if (apiBaseUrl) {
           osSocket = io(apiBaseUrl);
           osSocket.on('app_catalog_updated', (data) => {
-            if (data.appName === 'Social Media Scheduler') {
+            if (data.appName === 'Social Media Scheduler' && data.version !== pkg.version) {
               setUpdateAvailable(data.version);
             }
           });
