@@ -177,7 +177,7 @@ export function CreatePostView() {
   const [skills, setSkills] = useState([]);
   const [selectedModelId, setSelectedModelId] = useState('');
   const [selectedSkillId, setSelectedSkillId] = useState('');
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiModalMode, setAiModalMode] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState('');
 
@@ -659,18 +659,28 @@ export function CreatePostView() {
               
               {useSameCaption ? (
                 <div className="flex flex-col gap-3">
-                  {/* Inline AI Engine Selector */}
-                  <button 
-                    onClick={() => setIsAiModalOpen(true)} 
-                    className="w-full flex items-center justify-between px-4 py-3 bg-ds-primary/5 border border-ds-primary/20 rounded-xl text-ds-primary font-medium hover:bg-ds-primary/10 transition-colors shadow-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Database className="w-4 h-4" />
-                      <span className="text-sm">Engine: {selectedModelId ? aiModels.find(m => m.id === selectedModelId)?.name || 'Digital Suite Model' : 'Select AI Model'}</span>
-                      {selectedSkillId && <span className="text-xs text-ds-primary/70 ml-2 bg-ds-primary/10 px-2 py-0.5 rounded-md border border-ds-primary/10">with {skills.find(s => s.id === selectedSkillId)?.name}</span>}
-                    </div>
-                    <span className="text-[10px] font-bold tracking-widest text-ds-primary/70 bg-ds-primary/10 px-2 py-1 rounded">LOCAL NETWORK</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => { setAiSearchQuery(''); setAiModalMode('model'); }} 
+                      className="flex-1 flex items-center justify-between px-4 py-3 bg-ds-primary/5 border border-ds-primary/20 rounded-xl text-ds-primary font-medium hover:bg-ds-primary/10 transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Database className="w-4 h-4" />
+                        <span className="text-sm">Engine: {selectedModelId ? aiModels.find(m => m.id === selectedModelId)?.name || 'Digital Suite Model' : 'Select AI Model'}</span>
+                      </div>
+                      <span className="text-[10px] font-bold tracking-widest text-ds-primary/70 bg-ds-primary/10 px-2 py-1 rounded hidden sm:block">LOCAL NETWORK</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => { setAiSearchQuery(''); setAiModalMode('skill'); }} 
+                      className="flex-1 flex items-center justify-between px-4 py-3 bg-ds-surface border border-ds-border rounded-xl text-ds-text font-medium hover:bg-ds-border transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4 text-ds-textMuted" />
+                        <span className="text-sm">Persona: {selectedSkillId ? skills.find(s => s.id === selectedSkillId)?.name || 'No Skill' : 'No Skill (Default)'}</span>
+                      </div>
+                    </button>
+                  </div>
 
                   <div className="bg-ds-surface border border-ds-border rounded-2xl flex flex-col relative min-h-[350px] shadow-sm">
                     <div className="p-4 border-b border-ds-border bg-ds-background/30 rounded-t-2xl">
@@ -796,7 +806,7 @@ export function CreatePostView() {
                   <p className="text-sm font-medium">Select accounts to see a preview</p>
                 </div>
               ) : (
-                <div className="flex flex-row items-start justify-center gap-4 h-full">
+                <div className="flex flex-row items-start justify-center gap-4 min-h-full pb-8">
                   {/* Platform Tabs (Vertical Sidebar) */}
                   {selectedAccounts.length > 1 && (
                     <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0 py-2 pr-1 max-h-[500px]">
@@ -814,7 +824,7 @@ export function CreatePostView() {
                   )}
 
                   {/* Phone Mockup Frame */}
-                  <div className="w-full max-w-[380px] bg-ds-background border-[6px] border-ds-surface rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col h-[500px] shrink-0">
+                  <div className="w-full max-w-[380px] bg-ds-background border-[6px] border-ds-surface rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col h-[650px] shrink-0">
                      {/* Dynamic Notch */}
                      <div className="absolute top-0 inset-x-0 h-6 bg-ds-surface rounded-b-xl w-32 mx-auto z-10"></div>
                      <div className="bg-gray-100 flex-1 w-full overflow-y-auto custom-scrollbar pt-8 pb-4 px-2">
@@ -840,13 +850,15 @@ export function CreatePostView() {
       </div>
 
       {/* AI Selector Modal */}
-      {isAiModalOpen && (
+      {aiModalMode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-md bg-[#161616] border border-[#2D2D2D] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
             
             <div className="flex items-center justify-between p-4 border-b border-[#2D2D2D]">
-              <span className="text-[11px] font-bold text-gray-400 tracking-wider">AI MODEL ENGINE</span>
-              <button onClick={() => setIsAiModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+              <span className="text-[11px] font-bold text-gray-400 tracking-wider">
+                {aiModalMode === 'model' ? 'SELECT AI MODEL ENGINE' : 'SELECT PERSONA OR SKILL'}
+              </span>
+              <button onClick={() => setAiModalMode(null)} className="text-gray-400 hover:text-white transition-colors">
                 <XIcon className="w-5 h-5" />
               </button>
             </div>
@@ -856,7 +868,7 @@ export function CreatePostView() {
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input 
                   type="text" 
-                  placeholder="Search AI models or skills..." 
+                  placeholder={aiModalMode === 'model' ? "Search AI models..." : "Search Personas & Skills..."}
                   value={aiSearchQuery}
                   onChange={(e) => setAiSearchQuery(e.target.value)}
                   className="w-full bg-[#0F0F0F] text-white border border-[#2D2D2D] rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#4F8FFF] transition-colors"
@@ -865,77 +877,88 @@ export function CreatePostView() {
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-              <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Models</div>
-              <div className="flex flex-col gap-1 px-2 mb-4">
-                {aiModels.filter(m => m.provider === 'google' && m.name.toLowerCase().includes(aiSearchQuery.toLowerCase())).map(model => (
-                  <div 
-                    key={model.id}
-                    onClick={() => setSelectedModelId(model.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
-                      selectedModelId === model.id 
-                        ? 'bg-[#112411] border border-green-500/50' 
-                        : 'border border-transparent hover:bg-[#1E1E1E]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#1A2035] flex items-center justify-center">
-                        <Sparkles className="w-4 h-4 text-[#4F8FFF]" />
+              {aiModalMode === 'model' && (
+                <>
+                  <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Models</div>
+                  <div className="flex flex-col gap-1 px-2 mb-4">
+                    {aiModels.filter(m => m.name.toLowerCase().includes(aiSearchQuery.toLowerCase())).map(model => (
+                      <div 
+                        key={model.id}
+                        onClick={() => { setSelectedModelId(model.id); setAiModalMode(null); }}
+                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                          selectedModelId === model.id 
+                            ? 'bg-[#112411] border border-green-500/50' 
+                            : 'border border-transparent hover:bg-[#1E1E1E]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#1A2035] flex items-center justify-center">
+                            <Sparkles className="w-4 h-4 text-[#4F8FFF]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white">{model.name}</span>
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{model.provider.toUpperCase()} AI</span>
+                          </div>
+                        </div>
+                        {selectedModelId === model.id && <Check className="w-5 h-5 text-green-500" />}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white">{model.name}</span>
-                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{model.provider.toUpperCase()} AI</span>
-                      </div>
-                    </div>
-                    {selectedModelId === model.id && <Check className="w-5 h-5 text-green-500" />}
+                    ))}
+                    {aiModels.filter(m => m.name.toLowerCase().includes(aiSearchQuery.toLowerCase())).length === 0 && (
+                      <div className="text-center p-4 text-gray-500 text-sm">No models found</div>
+                    )}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
 
-              <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Personas & Skills (Optional)</div>
-              <div className="flex flex-col gap-1 px-2 mb-2">
-                <div 
-                  onClick={() => setSelectedSkillId('')}
-                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
-                    !selectedSkillId 
-                      ? 'bg-[#112411] border border-green-500/50' 
-                      : 'border border-transparent hover:bg-[#1E1E1E]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center">
-                        <Bot className="w-4 h-4 text-gray-400" />
+              {aiModalMode === 'skill' && (
+                <>
+                  <div className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Personas & Skills (Optional)</div>
+                  <div className="flex flex-col gap-1 px-2 mb-2">
+                    <div 
+                      onClick={() => { setSelectedSkillId(''); setAiModalMode(null); }}
+                      className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                        !selectedSkillId 
+                          ? 'bg-[#112411] border border-green-500/50' 
+                          : 'border border-transparent hover:bg-[#1E1E1E]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center">
+                            <Bot className="w-4 h-4 text-gray-400" />
+                          </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white">No Skill (Default)</span>
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">RAW MODEL INSTRUCTIONS</span>
+                        </div>
                       </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-white">No Skill (Default)</span>
-                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">RAW MODEL INSTRUCTIONS</span>
+                      {!selectedSkillId && <Check className="w-5 h-5 text-green-500" />}
                     </div>
-                  </div>
-                  {!selectedSkillId && <Check className="w-5 h-5 text-green-500" />}
-                </div>
 
-                {skills.filter(s => s.name.toLowerCase().includes(aiSearchQuery.toLowerCase())).map(skill => (
-                  <div 
-                    key={skill.id}
-                    onClick={() => setSelectedSkillId(skill.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
-                      selectedSkillId === skill.id 
-                        ? 'bg-[#112411] border border-green-500/50' 
-                        : 'border border-transparent hover:bg-[#1E1E1E]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center">
-                        <Wand2 className="w-4 h-4 text-[#4F8FFF]" />
+                    {skills.filter(s => s.name.toLowerCase().includes(aiSearchQuery.toLowerCase())).map(skill => (
+                      <div 
+                        key={skill.id}
+                        onClick={() => { setSelectedSkillId(skill.id); setAiModalMode(null); }}
+                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                          selectedSkillId === skill.id 
+                            ? 'bg-[#112411] border border-green-500/50' 
+                            : 'border border-transparent hover:bg-[#1E1E1E]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center">
+                            <Wand2 className="w-4 h-4 text-[#4F8FFF]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white">{skill.name}</span>
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{skill.category || 'GENERAL'}</span>
+                          </div>
+                        </div>
+                        {selectedSkillId === skill.id && <Check className="w-5 h-5 text-green-500" />}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white">{skill.name}</span>
-                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{skill.category || 'GENERAL'}</span>
-                      </div>
-                    </div>
-                    {selectedSkillId === skill.id && <Check className="w-5 h-5 text-green-500" />}
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
           </div>
         </div>
