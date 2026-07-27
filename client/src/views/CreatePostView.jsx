@@ -48,8 +48,11 @@ const PostPreview = ({ account, title, caption, hashtags, mediaUrl }) => {
   // FIX: Using .picture instead of .avatar_url
   const avatarUrl = account?.metadata?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${authorHandle}`;
 
+  // Strip inline hashtags from the caption before rendering — they're managed via the
+  // hashtags prop so they don't appear twice in the preview.
+  const captionWithoutInlineTags = (caption || '').replace(/(^|\s)#[a-zA-Z0-9_]+/g, '').trimEnd();
   const hashtagString = hashtags.length > 0 ? '\n\n' + hashtags.map(t => `#${t}`).join(' ') : '';
-  const finalCaption = (caption || '') + hashtagString;
+  const finalCaption = captionWithoutInlineTags + hashtagString;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden text-gray-900 mx-auto w-full max-w-[360px] text-sm font-sans flex flex-col mt-4">
@@ -403,20 +406,16 @@ export function CreatePostView() {
       setPlatformCaptions(newPlatformCaptions);
       setPlatformTitles(newPlatformTitles);
 
-      // Extract hashtags embedded in caption text by the AI, strip them from captions,
-      // and populate the hashtags state so the counter stays in sync.
+      // Extract hashtags embedded in caption text by the AI and populate the hashtags
+      // state so the counter stays in sync. We intentionally leave the hashtags IN the
+      // caption text — PostPreview handles deduplication when rendering the live preview.
       const hashtagSet = new Set();
-      const cleanedCaptions = {};
-      Object.entries(newPlatformCaptions).forEach(([accId, cap]) => {
-        const tags = (cap.match(/#([a-zA-Z0-9_]+)/g) || []).map(t => t.replace(/^#/, ''));
-        tags.forEach(t => hashtagSet.add(t));
-        // Strip the hashtags from the caption text (keep the rest clean)
-        cleanedCaptions[accId] = cap.replace(/(^|\s)#[a-zA-Z0-9_]+/g, '').trimEnd();
+      Object.values(newPlatformCaptions).forEach((cap) => {
+        (cap.match(/#([a-zA-Z0-9_]+)/g) || []).forEach(t => hashtagSet.add(t.replace(/^#/, '')));
       });
       const extractedTags = [...hashtagSet].slice(0, 5);
       if (extractedTags.length > 0) {
         setHashtags(extractedTags);
-        setPlatformCaptions(cleanedCaptions);
       }
 
       setUseSameCaption(false);
