@@ -1,5 +1,6 @@
 @import "tailwindcss";
-
+@source "../node_modules/@digital-suite/ui-kit";
+@source "../../../../ds-uikit";
 @theme {
   --color-ds-background: #09090b;
   --color-ds-surface: #18181b;
