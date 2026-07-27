@@ -170,6 +170,12 @@ export function CreatePostView() {
   const [isScheduling, setIsScheduling] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Modal dialog state (replaces alert() — not allowed in Tauri webviews)
+  const [modal, setModal] = useState(null);
+  const showToast = (message, type = 'error') => {
+    setModal({ message, type });
+  };
+
   // New state for Preview Tab
   const [activePreviewId, setActivePreviewId] = useState(null);
 
@@ -253,11 +259,11 @@ export function CreatePostView() {
         const data = await res.json();
         setMediaUrl(data.url);
       } else {
-        alert("Upload failed.");
+        showToast("Upload failed.", 'error');
       }
     } catch (err) {
       console.error(err);
-      alert("Network error during upload.");
+      showToast("Network error during upload.", 'error');
     } finally {
       setIsUploading(false);
     }
@@ -280,11 +286,11 @@ export function CreatePostView() {
 
   const handleSchedule = async () => {
     if (!postTime) {
-      alert("Please select a date and time to schedule the post.");
+      showToast("Please select a date and time to schedule the post.", 'error');
       return;
     }
     if (selectedAccounts.length === 0) {
-      alert("Please select at least one account.");
+      showToast("Please select at least one account.", 'error');
       return;
     }
 
@@ -321,10 +327,10 @@ export function CreatePostView() {
           })
         });
       }
-      alert("Posts scheduled successfully!");
-      navigate('/');
+        showToast("Posts scheduled successfully!", 'success');
+        navigate('/');
     } catch (err) {
-      alert("Failed to schedule posts: " + err.message);
+      showToast("Failed to schedule posts: " + err.message, 'error');
     } finally {
       setIsScheduling(false);
     }
@@ -332,11 +338,11 @@ export function CreatePostView() {
 
   const handleOptimizeCaptions = async () => {
     if (!caption) {
-      alert("Please write a master caption first.");
+      showToast("Please write a master caption first.", 'error');
       return;
     }
     if (selectedAccounts.length === 0) {
-      alert("Please select at least one account to optimize for.");
+      showToast("Please select at least one account to optimize for.", 'error');
       return;
     }
 
@@ -345,6 +351,13 @@ export function CreatePostView() {
 
     try {
       const selectedPlatforms = [...new Set(connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(a => a.provider))];
+
+      // Read user's API key from localStorage (synced from OS via postMessage)
+      let userApiKey;
+      try {
+        const stored = localStorage.getItem('digital_suite_settings');
+        if (stored) userApiKey = JSON.parse(stored)?.geminiApiKey;
+      } catch {}
 
       const res = await fetch(`${apiBaseUrl}/api/v1/ai/optimize-captions`, {
         method: 'POST',
@@ -356,7 +369,8 @@ export function CreatePostView() {
           masterCaption: caption,
           platforms: selectedPlatforms,
           modelId: selectedModelId,
-          skillId: selectedSkillId || undefined
+          skillId: selectedSkillId || undefined,
+          ...(userApiKey ? { userApiKey } : {})
         })
       });
 
@@ -391,7 +405,7 @@ export function CreatePostView() {
       setUseSameCaption(false);
     } catch (err) {
       console.error(err);
-      alert("Failed to optimize captions: " + err.message);
+      showToast("Failed to optimize captions: " + err.message, 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -401,15 +415,15 @@ export function CreatePostView() {
 
   const handleGenerateHashtags = async () => {
     if (!caption) {
-      alert("Please write a master caption first.");
+      showToast("Please write a master caption first.", 'error');
       return;
     }
     if (selectedAccounts.length === 0) {
-      alert("Please select at least one account to optimize for.");
+      showToast("Please select at least one account to optimize for.", 'error');
       return;
     }
     if (!selectedModelId) {
-      alert("Please select an AI Model Engine first.");
+      showToast("Please select an AI Model Engine first.", 'error');
       return;
     }
 
@@ -417,6 +431,13 @@ export function CreatePostView() {
 
     try {
       const selectedPlatforms = [...new Set(connectedAccounts.filter(a => selectedAccounts.includes(a.id)).map(a => a.provider))];
+
+      // Read user's API key from localStorage (synced from OS via postMessage)
+      let userApiKey;
+      try {
+        const stored = localStorage.getItem('digital_suite_settings');
+        if (stored) userApiKey = JSON.parse(stored)?.geminiApiKey;
+      } catch {}
 
       const res = await fetch(`${apiBaseUrl}/api/v1/ai/generate-hashtags`, {
         method: 'POST',
@@ -428,7 +449,8 @@ export function CreatePostView() {
           masterCaption: caption,
           platforms: selectedPlatforms,
           modelId: selectedModelId,
-          skillId: selectedSkillId || undefined
+          skillId: selectedSkillId || undefined,
+          ...(userApiKey ? { userApiKey } : {})
         })
       });
 
@@ -450,7 +472,7 @@ export function CreatePostView() {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to generate hashtags: " + err.message);
+      showToast("Failed to generate hashtags: " + err.message, 'error');
     } finally {
       setIsGeneratingHashtags(false);
     }
@@ -500,6 +522,27 @@ export function CreatePostView() {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden custom-scrollbar bg-ds-background relative">
+
+      {/* Modal Dialog (replaces alert() which is blocked in Tauri webviews) */}
+      {modal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm mx-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden">
+            <div className={`h-1 w-full ${modal.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
+            <div className="p-6">
+              <p className={`text-sm font-semibold mb-1 ${modal.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                {modal.type === 'success' ? '✓ Success' : '✕ Error'}
+              </p>
+              <p className="text-[var(--color-text)] text-sm leading-relaxed mt-2">{modal.message}</p>
+              <button
+                onClick={() => setModal(null)}
+                className="mt-5 w-full bg-[var(--color-primary)] hover:opacity-90 text-white font-semibold py-2.5 rounded-xl transition-opacity text-sm"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Header Block (Fixed) */}
       <div className="shrink-0 p-6 lg:p-8 border-b border-ds-border flex flex-col md:flex-row md:items-center justify-between gap-4 bg-ds-surface/30 backdrop-blur-md sticky top-0 z-20">
