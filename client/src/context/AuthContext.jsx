@@ -16,6 +16,11 @@ export function AuthProvider({ children }) {
           setSessionToken(payload.sessionToken);
           setApiBaseUrl(payload.apiBaseUrl);
         }
+        if (payload?.settings) {
+          localStorage.setItem('digital_suite_settings', JSON.stringify(payload.settings));
+          // Dispatch a storage event so UI kit components can re-render if they listen for it
+          window.dispatchEvent(new Event('storage'));
+        }
       }
     };
     
