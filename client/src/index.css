@@ -10,7 +10,20 @@
   --color-ds-text: #fafafa;
   --color-ds-textMuted: #a1a1aa;
 
-  /* UI Kit Compatibility */
+  /* UI Kit Compatibility (Theme aliases) */
+  --color-bg: #09090b;
+  --color-surface: #18181b;
+  --color-surface-raised: #27272a;
+  --color-border: #27272a;
+  --color-border-subtle: #3f3f46;
+  --color-primary: #22c55e;
+  --color-text: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-text-faint: #71717a;
+}
+
+:root {
+  /* UI Kit Compatibility (Native CSS Variables for inline styles) */
   --color-bg: #09090b;
   --color-surface: #18181b;
   --color-surface-raised: #27272a;

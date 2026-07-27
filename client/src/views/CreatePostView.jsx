@@ -721,6 +721,7 @@ export function CreatePostView() {
                            onSelect={(m) => { setSelectedModelId(m.id); setAiModalMode(null); }} 
                            onClose={() => setAiModalMode(null)} 
                            selectedModel={selectedModelId}
+                           className="absolute top-full left-0 mt-2 w-full sm:w-[340px] bg-[var(--color-surface)] border rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden animate-page-enter flex flex-col z-50"
                          />
                       )}
                     </div>
@@ -741,6 +742,7 @@ export function CreatePostView() {
                            skills={skills} 
                            onSelect={(s) => { setSelectedSkillId(s.id); setAiModalMode(null); }} 
                            onClose={() => setAiModalMode(null)} 
+                           className="absolute top-full left-0 mt-2 w-full bg-[var(--color-surface)] border rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden animate-page-enter flex flex-col z-50"
                          />
                       )}
                     </div>
