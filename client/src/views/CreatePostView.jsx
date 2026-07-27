@@ -402,6 +402,23 @@ export function CreatePostView() {
       
       setPlatformCaptions(newPlatformCaptions);
       setPlatformTitles(newPlatformTitles);
+
+      // Extract hashtags embedded in caption text by the AI, strip them from captions,
+      // and populate the hashtags state so the counter stays in sync.
+      const hashtagSet = new Set();
+      const cleanedCaptions = {};
+      Object.entries(newPlatformCaptions).forEach(([accId, cap]) => {
+        const tags = (cap.match(/#([a-zA-Z0-9_]+)/g) || []).map(t => t.replace(/^#/, ''));
+        tags.forEach(t => hashtagSet.add(t));
+        // Strip the hashtags from the caption text (keep the rest clean)
+        cleanedCaptions[accId] = cap.replace(/(^|\s)#[a-zA-Z0-9_]+/g, '').trimEnd();
+      });
+      const extractedTags = [...hashtagSet].slice(0, 5);
+      if (extractedTags.length > 0) {
+        setHashtags(extractedTags);
+        setPlatformCaptions(cleanedCaptions);
+      }
+
       setUseSameCaption(false);
     } catch (err) {
       console.error(err);
