@@ -776,15 +776,6 @@ export function CreatePostView() {
                         {isGenerating ? <div className="w-3.5 h-3.5 border-2 border-[#4F8FFF]/30 border-t-[#4F8FFF] rounded-full animate-spin"></div> : <Sparkles className="w-3.5 h-3.5 text-[#4F8FFF]" />}
                         {isGenerating ? 'Optimizing...' : 'Optimize Caption'}
                       </button>
-                      
-                      <button 
-                        onClick={handleGenerateHashtags} 
-                        disabled={isGeneratingHashtags || !selectedModelId}
-                        className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#252525] border border-[#2D2D2D] text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-sm disabled:opacity-50"
-                      >
-                        {isGeneratingHashtags ? <div className="w-3.5 h-3.5 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin"></div> : <Hash className="w-3.5 h-3.5 text-green-500" />}
-                        {isGeneratingHashtags ? 'Generating...' : 'Generate SEO Hashtags'}
-                      </button>
                     </div>
 
                     <div className="p-4 border-t border-ds-border bg-ds-background/50 rounded-b-2xl">
@@ -840,6 +831,12 @@ export function CreatePostView() {
                           className="w-full flex-1 bg-transparent text-ds-text placeholder-ds-textMuted resize-none outline-none focus:ring-0 text-[15px] leading-relaxed custom-scrollbar min-h-[120px]"
                           placeholder={`Caption for ${acc.provider.charAt(0).toUpperCase() + acc.provider.slice(1)}...`}
                         />
+                      </div>
+                      
+                      <div className="p-4 border-t border-ds-border bg-ds-background/50 rounded-b-2xl flex justify-end">
+                        <div className="text-[11px] font-medium text-ds-textMuted">
+                          {(platformCaptions[acc.id] || '').length}/3000 chars · {hashtags.length}/5 tags
+                        </div>
                       </div>
                     </div>
                   ))}
