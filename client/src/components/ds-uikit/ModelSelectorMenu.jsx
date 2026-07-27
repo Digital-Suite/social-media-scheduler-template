@@ -39,7 +39,19 @@ export function ModelSelectorMenu({ models, onSelect, onClose, selectedModel }) 
 
   const filteredModels = useMemo(() => {
     const lowerSearch = search.trim().toLowerCase();
-    let result = models;
+    let result = models.filter(m => {
+      const id = m.id?.toLowerCase() || '';
+      const name = m.name?.toLowerCase() || '';
+      // Hide non-conversational models like image generators, TTS, robotics, omni, and previews
+      return !id.includes('image') && 
+             !id.includes('tts') && 
+             !id.includes('audio') && 
+             !id.includes('robotics') && 
+             !id.includes('omni') &&
+             !id.includes('preview') &&
+             !name.includes('preview');
+    });
+
     if (!lowerSearch) return result;
     return result.filter(m => 
       m.name.toLowerCase().includes(lowerSearch) || 
