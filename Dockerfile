@@ -4,11 +4,11 @@ WORKDIR /app
 
 # Copy root package files and install server dependencies
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
 # Copy client package files and install client dependencies
 COPY client/package*.json ./client/
-RUN cd client && npm install
+RUN cd client && npm ci
 
 # Copy all remaining source files
 COPY . .
