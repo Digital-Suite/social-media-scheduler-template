@@ -135,15 +135,20 @@ export function CreatePostView() {
   const [workspaceAccountIds, setWorkspaceAccountIds] = useState([]);
   
   useEffect(() => {
-    if (activeWorkspaceId) {
-      fetch(`/api/workspaces/${activeWorkspaceId}/accounts`)
+    if (activeWorkspaceId && apiBaseUrl && sessionToken) {
+      fetch(`${apiBaseUrl}/api/v1/accounts?workspace_id=${activeWorkspaceId}`, {
+        headers: { Authorization: `Bearer ${sessionToken}` }
+      })
         .then(res => res.json())
-        .then(data => setWorkspaceAccountIds(data))
+        .then(data => {
+          // Extract the IDs of the returned accounts
+          setWorkspaceAccountIds(data.map(a => String(a.id)));
+        })
         .catch(err => console.error("Failed to load workspace accounts", err));
     } else {
       setWorkspaceAccountIds([]);
     }
-  }, [activeWorkspaceId]);
+  }, [activeWorkspaceId, apiBaseUrl, sessionToken]);
 
   // Filter accounts to only show those linked to the active workspace
   const connectedAccounts = allConnectedAccounts.filter(a => workspaceAccountIds.includes(String(a.id)));
@@ -784,28 +789,6 @@ export function CreatePostView() {
                            apiBaseUrl={apiBaseUrl}
                          />
                       )}
-                    </div>
-                    
-                    <div className={`flex-1 relative ${aiModalMode === 'skill' ? 'z-50' : 'z-10'}`}>
-                      <button 
-                        onClick={() => { setAiSearchQuery(''); setAiModalMode(aiModalMode === 'skill' ? null : 'skill'); }} 
-                        className="w-full flex items-center justify-between px-4 py-3 bg-ds-surface border border-ds-border rounded-xl text-ds-text font-medium hover:bg-ds-border transition-colors shadow-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Bot className="w-4 h-4 text-ds-textMuted" />
-                          <span className="text-sm">Skill: {selectedSkillId ? skills.find(s => s.id === selectedSkillId)?.name || 'No Skill' : 'No Skill (Default)'}</span>
-                        </div>
-                      </button>
-
-                      {aiModalMode === 'skill' && (
-                         <SkillSelectorMenu 
-                           skills={skills} 
-                           onSelect={(s) => { setSelectedSkillId(s.id); setAiModalMode(null); }} 
-                           onClose={() => setAiModalMode(null)} 
-                           className="absolute top-full left-0 mt-2 w-full bg-[var(--color-surface)] border rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] overflow-hidden animate-page-enter flex flex-col z-50"
-                         />
-                      )}
-                    </div>
                   </div>
 
                   <div className="bg-ds-surface border border-ds-border rounded-2xl flex flex-col relative min-h-[350px] shadow-sm">
