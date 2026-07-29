@@ -7,11 +7,11 @@ RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 RUN git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 # Copy root package files and install server dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Copy client package files and install client dependencies
 COPY client/package*.json ./client/
-RUN cd client && npm ci
+RUN cd client && npm install
 
 # Copy all remaining source files
 COPY . .
