@@ -2,6 +2,9 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# Install git for npm git dependencies and configure ssh to https rewrite
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+RUN git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 # Copy root package files and install server dependencies
 COPY package*.json ./
 RUN npm ci --omit=dev
