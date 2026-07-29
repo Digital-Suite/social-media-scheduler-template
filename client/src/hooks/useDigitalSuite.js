@@ -32,7 +32,12 @@ export function useDigitalSuite(navConfig) {
 
   const [workspaceId, setWorkspaceId] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('workspaceId') || null;
+    const idFromUrl = params.get('workspaceId');
+    if (idFromUrl) {
+      sessionStorage.setItem('ds_workspace_id', idFromUrl);
+      return idFromUrl;
+    }
+    return sessionStorage.getItem('ds_workspace_id') || null;
   });
 
   useEffect(() => {
