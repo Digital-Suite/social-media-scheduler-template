@@ -111,7 +111,10 @@ export function CalendarView() {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday start
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
 
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const calendarMonthStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calendarMonthEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+  const daysInMonth = eachDayOfInterval({ start: calendarMonthStart, end: calendarMonthEnd });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const [realPosts, setRealPosts] = useState([]);
