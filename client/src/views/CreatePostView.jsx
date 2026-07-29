@@ -789,6 +789,7 @@ export function CreatePostView() {
                            apiBaseUrl={apiBaseUrl}
                          />
                       )}
+                    </div>
                   </div>
 
                   <div className="bg-ds-surface border border-ds-border rounded-2xl flex flex-col relative min-h-[350px] shadow-sm">
