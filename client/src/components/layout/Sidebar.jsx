@@ -24,7 +24,6 @@ export function Sidebar() {
   ];
 
   const configLinks = [
-    { name: 'Accounts', to: '/accounts', icon: Users, badge: 15 },
     { name: 'Settings', to: '/settings', icon: Settings },
   ];
 

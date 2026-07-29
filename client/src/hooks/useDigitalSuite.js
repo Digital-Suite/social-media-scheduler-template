@@ -30,6 +30,11 @@ export function useDigitalSuite(navConfig) {
     return () => window.removeEventListener('message', handleMessage);
   }, [navConfig, navigate]);
 
+  const [workspaceId, setWorkspaceId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('workspaceId') || null;
+  });
+
   useEffect(() => {
     if (isEmbedded) {
       window.parent.postMessage({
@@ -39,5 +44,5 @@ export function useDigitalSuite(navConfig) {
     }
   }, [location.pathname, isEmbedded]);
 
-  return { isEmbedded };
+  return { isEmbedded, workspaceId };
 }

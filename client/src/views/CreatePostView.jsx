@@ -17,7 +17,7 @@ import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from 'react-icons/fa';
 import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { SiThreads } from 'react-icons/si';
 import { useAuth } from '../context/AuthContext';
-import { useWorkspace } from '../context/WorkspaceContext';
+import { useDigitalSuite } from '../hooks/useDigitalSuite';
 import { ModelSelectorMenu, SkillSelectorMenu } from '@digital-suite/ui-kit';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { format, addMinutes } from 'date-fns';
@@ -128,22 +128,22 @@ const PostPreview = ({ account, title, caption, hashtags, mediaUrl }) => {
 
 export function CreatePostView() {
   const { sessionToken, connectedAccounts: allConnectedAccounts, apiBaseUrl } = useAuth();
-  const { activeWorkspace } = useWorkspace();
+  const { workspaceId: activeWorkspaceId } = useDigitalSuite();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [workspaceAccountIds, setWorkspaceAccountIds] = useState([]);
   
   useEffect(() => {
-    if (activeWorkspace) {
-      fetch(`/api/workspaces/${activeWorkspace.id}/accounts`)
+    if (activeWorkspaceId) {
+      fetch(`/api/workspaces/${activeWorkspaceId}/accounts`)
         .then(res => res.json())
         .then(data => setWorkspaceAccountIds(data))
-        .catch(console.error);
+        .catch(err => console.error("Failed to load workspace accounts", err));
     } else {
       setWorkspaceAccountIds([]);
     }
-  }, [activeWorkspace]);
+  }, [activeWorkspaceId]);
 
   // Filter accounts to only show those linked to the active workspace
   const connectedAccounts = allConnectedAccounts.filter(a => workspaceAccountIds.includes(String(a.id)));
@@ -326,7 +326,7 @@ export function CreatePostView() {
             // FIX: Ensure picture is extracted properly
             authorAvatarUrl: account.metadata?.picture || null,
             accountId: account.id,
-            workspaceId: activeWorkspace?.id || null
+            workspaceId: activeWorkspaceId || null
           })
         });
       }

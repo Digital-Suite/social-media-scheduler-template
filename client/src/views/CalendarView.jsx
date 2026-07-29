@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import pkg from '../../../package.json';
-import { useWorkspace } from '../context/WorkspaceContext';
+import { useDigitalSuite } from '../hooks/useDigitalSuite';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -96,7 +96,7 @@ export function CalendarView() {
   const navigate = useNavigate();
   const { timezone, timeFormat } = useSettings();
   const { sessionToken, apiBaseUrl } = useAuth();
-  const { activeWorkspace } = useWorkspace();
+  const { workspaceId: activeWorkspaceId } = useDigitalSuite();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hoveredPost, setHoveredPost] = useState(null);
   const hoverTimeoutRef = React.useRef(null);
@@ -120,7 +120,7 @@ export function CalendarView() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const url = activeWorkspace ? `/api/posts?workspaceId=${activeWorkspace.id}` : '/api/posts';
+        const url = activeWorkspaceId ? `/api/posts?workspaceId=${activeWorkspaceId}` : '/api/posts';
         const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
@@ -196,7 +196,7 @@ export function CalendarView() {
           if (osSocket) osSocket.disconnect();
         };
       }).catch(err => console.error('Failed to load socket.io-client', err));
-  }, [timezone, timeFormat, activeWorkspace, refreshKey]); // Re-fetch occasionally
+  }, [timezone, timeFormat, activeWorkspaceId, refreshKey]); // Re-fetch occasionally
 
   const handleDeletePost = async (id) => {
     try {
