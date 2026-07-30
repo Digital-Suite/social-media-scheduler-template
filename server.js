@@ -340,7 +340,7 @@ app.delete('/api/posts/:id', async (req, res) => {
 });
 
 app.put('/api/posts/:id', async (req, res) => {
-    const { postTime, workspaceId } = req.body;
+    const { postTime, workspaceId, content, title, hashtags } = req.body;
     try {
       let finalUtcTime = postTime;
       if (postTime && !postTime.endsWith('Z')) {
@@ -364,8 +364,37 @@ app.put('/api/posts/:id', async (req, res) => {
          finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
       }
 
-      await dbRun("UPDATE posts SET post_time = ?, status = 'scheduled' WHERE id = ?", [finalUtcTime, req.params.id]);
+      const updates = [];
+      const params = [];
+      
+      if (finalUtcTime) {
+        updates.push("post_time = ?");
+        params.push(finalUtcTime);
+      }
+      if (content !== undefined) {
+        updates.push("content = ?");
+        params.push(content);
+      }
+      if (title !== undefined) {
+        updates.push("title = ?");
+        params.push(title);
+      }
+      if (hashtags !== undefined) {
+        updates.push("hashtags = ?");
+        params.push(JSON.stringify(hashtags || []));
+      }
+
+      if (updates.length > 0) {
+        updates.push("status = 'scheduled'");
+        params.push(req.params.id);
+        const setClause = updates.join(', ');
+        await dbRun(`UPDATE posts SET ${setClause} WHERE id = ?`, params);
+      }
+
       const updatedPost = await dbGet('SELECT * FROM posts WHERE id = ?', [req.params.id]);
+      if (!updatedPost) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
       updatedPost.post_time = updatedPost.post_time ? `${updatedPost.post_time}Z`.replace(' ', 'T') : updatedPost.post_time;
       updatedPost.created_at = updatedPost.created_at ? `${updatedPost.created_at}Z`.replace(' ', 'T') : updatedPost.created_at;
       res.json(updatedPost);

@@ -25,6 +25,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete, onUpdate })
   const [activeIndex, setActiveIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editTime, setEditTime] = useState('');
+  const [editContent, setEditContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [selectedPostsForEdit, setSelectedPostsForEdit] = useState([]);
 
@@ -88,7 +89,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete, onUpdate })
         fetch(`/api/posts/${p.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postTime: utcPostTime })
+          body: JSON.stringify({ postTime: utcPostTime, content: editContent })
         })
       );
       
@@ -239,6 +240,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete, onUpdate })
                         onClick={() => {
                           const dateObj = post.postTime ? new Date(post.postTime) : new Date();
                           setEditTime(format(dateObj, "yyyy-MM-dd'T'HH:mm"));
+                          setEditContent(post.content || '');
                           setIsEditing(true);
                         }}
                         className="text-xs text-ds-primary hover:underline font-medium"
@@ -285,9 +287,17 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete, onUpdate })
                   <h3 className="font-bold text-ds-text text-lg mb-2">{post.title}</h3>
                 )}
                 
-                <p className="text-ds-text whitespace-pre-wrap leading-relaxed text-sm">
-                  {post.content}
-                </p>
+                {isEditing ? (
+                  <textarea 
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full bg-ds-surface border border-ds-border text-ds-text rounded-md px-3 py-2 text-sm focus:outline-none focus:border-ds-primary resize-y min-h-[100px]"
+                  />
+                ) : (
+                  <p className="text-ds-text whitespace-pre-wrap leading-relaxed text-sm">
+                    {post.content}
+                  </p>
+                )}
                 
                 {post.hashtags && (
                   <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-ds-border">
