@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useDigitalSuite } from './DigitalSuiteContext';
 
 export const TIMEZONES = [
   { label: 'Pacific Time (US & Canada)',   value: 'America/Los_Angeles',   offset: 'UTC-8/UTC-7'  },
@@ -39,26 +40,54 @@ const DEFAULT_TIMEZONE = TIMEZONES.find(tz => tz.value === 'America/New_York');
 const SettingsContext = createContext(null);
 
 export function SettingsProvider({ children }) {
-  const [timezone, setTimezone] = useState(() => {
-    const saved = localStorage.getItem('ds_scheduler_timezone');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return DEFAULT_TIMEZONE;
-  });
-  
-  const [timeFormat, setTimeFormat] = useState(() => {
-    return localStorage.getItem('ds_scheduler_timeformat') || '12h';
-  });
+  const { workspaceId } = useDigitalSuite();
+  const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
+  const [timeFormat, setTimeFormat] = useState('12h');
+  const hasLoaded = useRef(false);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    
+    fetch(`/api/settings?workspaceId=${workspaceId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setTimezone({
+            label: data.timezone_label,
+            value: data.timezone_value,
+            offset: data.timezone_offset
+          });
+          setTimeFormat(data.time_format);
+          hasLoaded.current = true;
+        }
+      })
+      .catch(err => console.error('Failed to load settings:', err));
+  }, [workspaceId]);
+
+  const saveToApi = (tz, fmt) => {
+    if (!workspaceId || !hasLoaded.current) return;
+    
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workspaceId,
+        timezoneLabel: tz.label,
+        timezoneValue: tz.value,
+        timezoneOffset: tz.offset,
+        timeFormat: fmt
+      })
+    }).catch(err => console.error('Failed to save settings:', err));
+  };
 
   const handleSetTimezone = (tz) => {
     setTimezone(tz);
-    localStorage.setItem('ds_scheduler_timezone', JSON.stringify(tz));
+    saveToApi(tz, timeFormat);
   };
 
   const handleSetTimeFormat = (fmt) => {
     setTimeFormat(fmt);
-    localStorage.setItem('ds_scheduler_timeformat', fmt);
+    saveToApi(timezone, fmt);
   };
 
   return (

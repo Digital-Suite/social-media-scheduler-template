@@ -97,6 +97,18 @@ async function initDb() {
       );
     `);
 
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS settings (
+        workspace_id INTEGER PRIMARY KEY,
+        timezone_label TEXT,
+        timezone_value TEXT,
+        timezone_offset TEXT,
+        time_format TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log('Database initialized successfully.');
 
     // Migration for existing tables
@@ -178,6 +190,52 @@ app.get('/api/workspaces/:id/accounts', async (req, res) => {
   try {
     const rows = await dbAll('SELECT account_id FROM workspace_accounts WHERE workspace_id = ?', [req.params.id]);
     res.json(rows.map(r => r.account_id));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/settings', async (req, res) => {
+  const { workspaceId } = req.query;
+  if (!workspaceId) return res.status(400).json({ error: 'workspaceId is required' });
+  
+  try {
+    const settings = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId]);
+    if (settings) {
+      res.json(settings);
+    } else {
+      res.json({
+        workspace_id: workspaceId,
+        timezone_label: 'Eastern Time (US & Canada)',
+        timezone_value: 'America/New_York',
+        timezone_offset: '-04:00',
+        time_format: '12h'
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/settings', async (req, res) => {
+  const { workspaceId, timezoneLabel, timezoneValue, timezoneOffset, timeFormat } = req.body;
+  if (!workspaceId) return res.status(400).json({ error: 'workspaceId is required' });
+  
+  try {
+    const existing = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId]);
+    if (existing) {
+      await dbRun(
+        'UPDATE settings SET timezone_label = ?, timezone_value = ?, timezone_offset = ?, time_format = ?, updated_at = CURRENT_TIMESTAMP WHERE workspace_id = ?',
+        [timezoneLabel, timezoneValue, timezoneOffset, timeFormat, workspaceId]
+      );
+    } else {
+      await dbRun(
+        'INSERT INTO settings (workspace_id, timezone_label, timezone_value, timezone_offset, time_format) VALUES (?, ?, ?, ?, ?)',
+        [workspaceId, timezoneLabel, timezoneValue, timezoneOffset, timeFormat]
+      );
+    }
+    const updated = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId]);
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
