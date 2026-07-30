@@ -9,9 +9,9 @@ import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <SettingsProvider>
-      <AuthProvider>
-        <BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <SettingsProvider>
           <Routes>
             <Route element={<AppShell />}>
               <Route path="/" element={<CalendarView />} />
@@ -20,9 +20,9 @@ function App() {
               <Route path="*" element={<div className="p-8 text-ds-textMuted">Coming Soon</div>} />
             </Route>
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </SettingsProvider>
+        </SettingsProvider>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
