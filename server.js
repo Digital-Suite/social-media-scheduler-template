@@ -290,20 +290,44 @@ app.post('/api/upload', upload.single('media'), (req, res) => {
 });
 
 app.post('/api/posts', async (req, res) => {
-  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl, accountId, workspaceId } = req.body;
-  
-  try {
-    const result = await dbRun(
-      'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url, status, author_name, author_handle, author_avatar_url, account_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [platform, title || null, content || '', JSON.stringify(hashtags || []), mediaUrl || null, postTime, sessionToken, apiBaseUrl, 'scheduled', authorName || null, authorHandle || null, authorAvatarUrl || null, accountId || null, workspaceId || null]
-    );
-    const newPost = await dbGet('SELECT * FROM posts WHERE id = ?', [result.lastID]);
-    newPost.post_time = newPost.post_time ? `${newPost.post_time}Z`.replace(' ', 'T') : newPost.post_time;
-    newPost.created_at = newPost.created_at ? `${newPost.created_at}Z`.replace(' ', 'T') : newPost.created_at;
-    res.json(newPost);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl, accountId, workspaceId } = req.body;
+    
+    try {
+      let finalUtcTime = postTime;
+      // If it doesn't end with Z, assume it's local time based on workspace settings
+      if (postTime && !postTime.endsWith('Z')) {
+         const settingsRow = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId || null]);
+         let offsetStr = '-04:00';
+         if (settingsRow && settingsRow.timezone_offset) {
+            offsetStr = settingsRow.timezone_offset;
+         }
+         
+         const offsetMatch = offsetStr.match(/([+-]\d+)(?::(\d+))?/);
+         if (offsetMatch) {
+            const hours = parseInt(offsetMatch[1]);
+            const mins = offsetMatch[2] ? parseInt(offsetMatch[2]) : 0;
+            const localDate = new Date(postTime + 'Z'); 
+            localDate.setUTCHours(localDate.getUTCHours() - hours);
+            localDate.setUTCMinutes(localDate.getUTCMinutes() - mins);
+            finalUtcTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
+         } else {
+            finalUtcTime = postTime.replace('T', ' ');
+         }
+      } else if (postTime) {
+         finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
+      }
+
+      const result = await dbRun(
+        'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url, status, author_name, author_handle, author_avatar_url, account_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [platform, title || null, content || '', JSON.stringify(hashtags || []), mediaUrl || null, finalUtcTime, sessionToken, apiBaseUrl, 'scheduled', authorName || null, authorHandle || null, authorAvatarUrl || null, accountId || null, workspaceId || null]
+      );
+      const newPost = await dbGet('SELECT * FROM posts WHERE id = ?', [result.lastID]);
+      newPost.post_time = newPost.post_time ? `${newPost.post_time}Z`.replace(' ', 'T') : newPost.post_time;
+      newPost.created_at = newPost.created_at ? `${newPost.created_at}Z`.replace(' ', 'T') : newPost.created_at;
+      res.json(newPost);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
 });
 
 app.delete('/api/posts/:id', async (req, res) => {
@@ -316,16 +340,38 @@ app.delete('/api/posts/:id', async (req, res) => {
 });
 
 app.put('/api/posts/:id', async (req, res) => {
-  const { postTime } = req.body;
-  try {
-    await dbRun("UPDATE posts SET post_time = ?, status = 'scheduled' WHERE id = ?", [postTime, req.params.id]);
-    const updatedPost = await dbGet('SELECT * FROM posts WHERE id = ?', [req.params.id]);
-    updatedPost.post_time = updatedPost.post_time ? `${updatedPost.post_time}Z`.replace(' ', 'T') : updatedPost.post_time;
-    updatedPost.created_at = updatedPost.created_at ? `${updatedPost.created_at}Z`.replace(' ', 'T') : updatedPost.created_at;
-    res.json(updatedPost);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { postTime, workspaceId } = req.body;
+    try {
+      let finalUtcTime = postTime;
+      if (postTime && !postTime.endsWith('Z')) {
+         const settingsRow = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId || null]);
+         let offsetStr = '-04:00';
+         if (settingsRow && settingsRow.timezone_offset) {
+            offsetStr = settingsRow.timezone_offset;
+         }
+         const offsetMatch = offsetStr.match(/([+-]\d+)(?::(\d+))?/);
+         if (offsetMatch) {
+            const hours = parseInt(offsetMatch[1]);
+            const mins = offsetMatch[2] ? parseInt(offsetMatch[2]) : 0;
+            const localDate = new Date(postTime + 'Z'); 
+            localDate.setUTCHours(localDate.getUTCHours() - hours);
+            localDate.setUTCMinutes(localDate.getUTCMinutes() - mins);
+            finalUtcTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
+         } else {
+            finalUtcTime = postTime.replace('T', ' ');
+         }
+      } else if (postTime) {
+         finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
+      }
+
+      await dbRun("UPDATE posts SET post_time = ?, status = 'scheduled' WHERE id = ?", [finalUtcTime, req.params.id]);
+      const updatedPost = await dbGet('SELECT * FROM posts WHERE id = ?', [req.params.id]);
+      updatedPost.post_time = updatedPost.post_time ? `${updatedPost.post_time}Z`.replace(' ', 'T') : updatedPost.post_time;
+      updatedPost.created_at = updatedPost.created_at ? `${updatedPost.created_at}Z`.replace(' ', 'T') : updatedPost.created_at;
+      res.json(updatedPost);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
 });
 
 

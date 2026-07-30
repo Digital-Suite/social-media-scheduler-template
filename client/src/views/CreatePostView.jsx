@@ -311,8 +311,7 @@ export function CreatePostView() {
         const postTitle = useSameCaption ? title : (platformTitles[accountId] || title);
         const postCaption = useSameCaption ? caption : (platformCaptions[accountId] || caption);
         
-        const localDate = new Date(postTime);
-        const utcPostTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
+        const localPostTime = postTime;
 
         await fetch('/api/posts', {
           method: 'POST',
@@ -323,7 +322,7 @@ export function CreatePostView() {
             content: postCaption,
             hashtags: hashtags.length > 0 ? hashtags : undefined,
             mediaUrl: mediaUrl,
-            postTime: utcPostTime,
+            postTime: localPostTime,
             sessionToken: sessionToken,
             apiBaseUrl: apiBaseUrl,
             authorName: account.metadata?.name || account.metadata?.username || null,
