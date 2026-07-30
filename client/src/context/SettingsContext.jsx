@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { useDigitalSuite } from './DigitalSuiteContext';
+import { useDigitalSuite } from '../hooks/useDigitalSuite';
 
 export const TIMEZONES = [
   { label: 'Pacific Time (US & Canada)',   value: 'America/Los_Angeles',   offset: 'UTC-8/UTC-7'  },
