@@ -8,6 +8,7 @@ const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 const cron = require('node-cron');
 const multer = require('multer');
+const { DateTime } = require('luxon');
 
 const app = express();
 const server = http.createServer(app);
@@ -97,18 +98,6 @@ async function initDb() {
       );
     `);
 
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS settings (
-        workspace_id INTEGER PRIMARY KEY,
-        timezone_label TEXT,
-        timezone_value TEXT,
-        timezone_offset TEXT,
-        time_format TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
     console.log('Database initialized successfully.');
 
     // Migration for existing tables
@@ -195,52 +184,6 @@ app.get('/api/workspaces/:id/accounts', async (req, res) => {
   }
 });
 
-app.get('/api/settings', async (req, res) => {
-  const { workspaceId } = req.query;
-  if (!workspaceId) return res.status(400).json({ error: 'workspaceId is required' });
-  
-  try {
-    const settings = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId]);
-    if (settings) {
-      res.json(settings);
-    } else {
-      res.json({
-        workspace_id: workspaceId,
-        timezone_label: 'Eastern Time (US & Canada)',
-        timezone_value: 'America/New_York',
-        timezone_offset: '-04:00',
-        time_format: '12h'
-      });
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/settings', async (req, res) => {
-  const { workspaceId, timezoneLabel, timezoneValue, timezoneOffset, timeFormat } = req.body;
-  if (!workspaceId) return res.status(400).json({ error: 'workspaceId is required' });
-  
-  try {
-    const existing = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId]);
-    if (existing) {
-      await dbRun(
-        'UPDATE settings SET timezone_label = ?, timezone_value = ?, timezone_offset = ?, time_format = ?, updated_at = CURRENT_TIMESTAMP WHERE workspace_id = ?',
-        [timezoneLabel, timezoneValue, timezoneOffset, timeFormat, workspaceId]
-      );
-    } else {
-      await dbRun(
-        'INSERT INTO settings (workspace_id, timezone_label, timezone_value, timezone_offset, time_format) VALUES (?, ?, ?, ?, ?)',
-        [workspaceId, timezoneLabel, timezoneValue, timezoneOffset, timeFormat]
-      );
-    }
-    const updated = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId]);
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.post('/api/workspaces/:id/accounts', async (req, res) => {
   const { accountIds } = req.body; // Array of account_ids to sync
   if (!Array.isArray(accountIds)) return res.status(400).json({ error: 'accountIds must be an array' });
@@ -290,32 +233,17 @@ app.post('/api/upload', upload.single('media'), (req, res) => {
 });
 
 app.post('/api/posts', async (req, res) => {
-    const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl, accountId, workspaceId } = req.body;
-    
-    try {
-      let finalUtcTime = postTime;
-      // If it doesn't end with Z, assume it's local time based on workspace settings
-      if (postTime && !postTime.endsWith('Z')) {
-         const settingsRow = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId || null]);
-         let offsetStr = '-04:00';
-         if (settingsRow && settingsRow.timezone_offset) {
-            offsetStr = settingsRow.timezone_offset;
-         }
-         
-         const offsetMatch = offsetStr.match(/([+-]\d+)(?::(\d+))?/);
-         if (offsetMatch) {
-            const hours = parseInt(offsetMatch[1]);
-            const mins = offsetMatch[2] ? parseInt(offsetMatch[2]) : 0;
-            const localDate = new Date(postTime + 'Z'); 
-            localDate.setUTCHours(localDate.getUTCHours() - hours);
-            localDate.setUTCMinutes(localDate.getUTCMinutes() - mins);
-            finalUtcTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
-         } else {
-            finalUtcTime = postTime.replace('T', ' ');
-         }
-      } else if (postTime) {
-         finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
-      }
+  const { platform, title, content, hashtags, mediaUrl, postTime, sessionToken, apiBaseUrl, authorName, authorHandle, authorAvatarUrl, accountId, workspaceId, timezone } = req.body;
+  
+  try {
+    let finalUtcTime = postTime;
+    if (postTime && !postTime.endsWith('Z')) {
+      const tz = timezone || 'UTC';
+      const dt = DateTime.fromISO(postTime, { zone: tz });
+      finalUtcTime = dt.toUTC().toFormat('yyyy-MM-dd HH:mm:ss');
+    } else if (postTime) {
+      finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
+    }
 
       const result = await dbRun(
         'INSERT INTO posts (platform, title, content, hashtags, media_url, post_time, session_token, api_base_url, status, author_name, author_handle, author_avatar_url, account_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -340,29 +268,16 @@ app.delete('/api/posts/:id', async (req, res) => {
 });
 
 app.put('/api/posts/:id', async (req, res) => {
-    const { postTime, workspaceId, content, title, hashtags } = req.body;
-    try {
-      let finalUtcTime = postTime;
-      if (postTime && !postTime.endsWith('Z')) {
-         const settingsRow = await dbGet('SELECT * FROM settings WHERE workspace_id = ?', [workspaceId || null]);
-         let offsetStr = '-04:00';
-         if (settingsRow && settingsRow.timezone_offset) {
-            offsetStr = settingsRow.timezone_offset;
-         }
-         const offsetMatch = offsetStr.match(/([+-]\d+)(?::(\d+))?/);
-         if (offsetMatch) {
-            const hours = parseInt(offsetMatch[1]);
-            const mins = offsetMatch[2] ? parseInt(offsetMatch[2]) : 0;
-            const localDate = new Date(postTime + 'Z'); 
-            localDate.setUTCHours(localDate.getUTCHours() - hours);
-            localDate.setUTCMinutes(localDate.getUTCMinutes() - mins);
-            finalUtcTime = localDate.toISOString().slice(0, 19).replace('T', ' ');
-         } else {
-            finalUtcTime = postTime.replace('T', ' ');
-         }
-      } else if (postTime) {
-         finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
-      }
+  const { postTime, workspaceId, content, title, hashtags, timezone } = req.body;
+  try {
+    let finalUtcTime = postTime;
+    if (postTime && !postTime.endsWith('Z')) {
+      const tz = timezone || 'UTC';
+      const dt = DateTime.fromISO(postTime, { zone: tz });
+      finalUtcTime = dt.toUTC().toFormat('yyyy-MM-dd HH:mm:ss');
+    } else if (postTime) {
+      finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
+    }
 
       const updates = [];
       const params = [];

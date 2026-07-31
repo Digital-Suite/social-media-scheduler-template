@@ -89,7 +89,7 @@ export function PostDetailsModal({ isOpen, posts, onClose, onDelete, onUpdate })
         fetch(`/api/posts/${p.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postTime: utcPostTime, content: editContent })
+          body: JSON.stringify({ postTime: editTime, content: editContent, timezone: timezone?.value || 'UTC' })
         })
       );
       

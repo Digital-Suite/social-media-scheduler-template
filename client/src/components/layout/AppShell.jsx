@@ -5,8 +5,7 @@ import { useDigitalSuite } from '../../hooks/useDigitalSuite';
 import { Calendar, Settings } from 'lucide-react';
 
 const APP_NAVIGATION = [
-  { id: 'calendar', label: 'Calendar', path: '', icon: 'Calendar' },
-  { id: 'settings', label: 'Settings', path: '/settings', icon: 'Settings' }
+  { id: 'calendar', label: 'Calendar', path: '', icon: 'Calendar' }
 ];
 
 export function AppShell() {

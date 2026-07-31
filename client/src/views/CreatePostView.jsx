@@ -18,6 +18,7 @@ import { FaXTwitter, FaTiktok } from 'react-icons/fa6';
 import { SiThreads } from 'react-icons/si';
 import { useAuth } from '../context/AuthContext';
 import { useDigitalSuite } from '../hooks/useDigitalSuite';
+import { useSettings } from '../context/SettingsContext';
 import { ModelSelectorMenu, SkillSelectorMenu } from '@digital-suite/ui-kit';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { format, addMinutes } from 'date-fns';
@@ -127,7 +128,8 @@ const PostPreview = ({ account, title, caption, hashtags, mediaUrl }) => {
 };
 
 export function CreatePostView() {
-  const { sessionToken, connectedAccounts: allConnectedAccounts, apiBaseUrl } = useAuth();
+  const { sessionToken, apiBaseUrl, connectedAccounts: allConnectedAccounts } = useAuth();
+  const { timezone } = useSettings();
   const { workspaceId: activeWorkspaceId } = useDigitalSuite();
   const navigate = useNavigate();
   const location = useLocation();
@@ -330,7 +332,8 @@ export function CreatePostView() {
             // FIX: Ensure picture is extracted properly
             authorAvatarUrl: account.metadata?.picture || null,
             accountId: account.id,
-            workspaceId: activeWorkspaceId || null
+            workspaceId: activeWorkspaceId || null,
+            timezone: timezone?.value || 'UTC'
           })
         });
       }
