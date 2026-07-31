@@ -211,11 +211,13 @@ app.get('/api/posts', async (req, res) => {
     const rows = await dbAll(sql, params);
     
     // Ensure all dates are explicitly treated as UTC by appending 'Z'
-    const formattedRows = rows.map(row => ({
-      ...row,
-      post_time: row.post_time ? (row.post_time.endsWith('Z') ? row.post_time : `${row.post_time}Z`.replace(' ', 'T')) : row.post_time,
-      created_at: row.created_at ? (row.created_at.endsWith('Z') ? row.created_at : `${row.created_at}Z`.replace(' ', 'T')) : row.created_at
-    }));
+    const formattedRows = rows
+      .filter(row => !row.post_time || !row.post_time.includes('Invalid'))
+      .map(row => ({
+        ...row,
+        post_time: row.post_time ? (row.post_time.endsWith('Z') ? row.post_time : `${row.post_time}Z`.replace(' ', 'T')) : row.post_time,
+        created_at: row.created_at ? (row.created_at.endsWith('Z') ? row.created_at : `${row.created_at}Z`.replace(' ', 'T')) : row.created_at
+      }));
     res.json(formattedRows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -240,6 +242,7 @@ app.post('/api/posts', async (req, res) => {
     if (postTime && !postTime.endsWith('Z')) {
       const tz = timezone || 'UTC';
       const dt = DateTime.fromISO(postTime, { zone: tz });
+      if (!dt.isValid) return res.status(400).json({ error: `Invalid postTime provided: ${postTime}` });
       finalUtcTime = dt.toUTC().toFormat('yyyy-MM-dd HH:mm:ss');
     } else if (postTime) {
       finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
@@ -274,6 +277,7 @@ app.put('/api/posts/:id', async (req, res) => {
     if (postTime && !postTime.endsWith('Z')) {
       const tz = timezone || 'UTC';
       const dt = DateTime.fromISO(postTime, { zone: tz });
+      if (!dt.isValid) return res.status(400).json({ error: `Invalid postTime provided: ${postTime}` });
       finalUtcTime = dt.toUTC().toFormat('yyyy-MM-dd HH:mm:ss');
     } else if (postTime) {
       finalUtcTime = postTime.replace('Z', '').replace('T', ' ');
